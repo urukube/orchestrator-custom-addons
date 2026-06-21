@@ -1,0 +1,54 @@
+# =============================================================================
+# Kiali Helm Chart Values
+# Chart: https://github.com/kiali/helm-charts/tree/master/kiali-server
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Deployment Configuration [DEFAULT]
+# -----------------------------------------------------------------------------
+deployment:
+  replicas: 1 # [DEFAULT]
+  ingress:
+    enabled: true
+    class_name: istio
+    override_yaml:
+      spec:
+        ingressClassName: istio
+        rules:
+          - host: kiali.local
+            http:
+              paths:
+                - path: /
+                  pathType: Prefix
+                  backend:
+                    service:
+                      name: kiali
+                      port:
+                        number: 20001
+
+# -----------------------------------------------------------------------------
+# Auth Configuration
+# Purpose: Define how users authenticate to Kiali.
+# Importance:
+#   - strategy: anonymous - Allows access without login (for dev/test)
+#   - strategy: token - Requires Kubernetes ServiceAccount token
+# -----------------------------------------------------------------------------
+auth:
+  strategy: anonymous # [CUSTOM] Default is often token. Anonymous for ease of access in test.
+
+# -----------------------------------------------------------------------------
+# External Services [DEFAULT]
+# Purpose: Configure how Kiali connects to Prometheus and Grafana.
+# -----------------------------------------------------------------------------
+external_services:
+  prometheus:
+    url: "http://prometheus-server.monitoring.svc.cluster.local:80/prometheus" # [CUSTOM] Pointing to our Prometheus
+
+# -----------------------------------------------------------------------------
+# Service Configuration [DEFAULT]
+# -----------------------------------------------------------------------------
+server:
+  web_root: /kiali # [CUSTOM]
+  service:
+    type: ClusterIP # [DEFAULT]
+    port: 20001 # [DEFAULT]

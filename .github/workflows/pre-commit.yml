@@ -1,0 +1,16 @@
+name: pre-commit
+"on":
+  push:
+
+permissions:
+  contents: read
+
+jobs:
+  run:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.14.2"
+      - uses: pre-commit/action@v3.0.1

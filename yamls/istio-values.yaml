@@ -1,0 +1,105 @@
+# =============================================================================
+# Istio Discovery (Istiod) Helm Chart Values
+# Chart: https://github.com/istio/istio/tree/master/manifests/charts/istio-control/istio-discovery
+# =============================================================================
+# Legend:
+#   [CUSTOM]  - Values modified from chart defaults for this module
+#   [DEFAULT] - Chart default values (included for reference)
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Global Configuration
+# Purpose: Defines global settings shared across Istio components.
+# Importance:
+#   - systemDefaultRegistry: "" - Uses the default registry (docker.io) or can be overridden
+#   - hub: docker.io/istio - Repository for Istio images
+#   - tag: <version> - Calculated from chart version usually
+# -----------------------------------------------------------------------------
+global:
+  # -----------------------------------------------------------------------------
+  istioNamespace: istio-system  # [DEFAULT]
+
+  # Default hub for Istio images.
+  hub: docker.io/istio  # [DEFAULT]
+
+  # Default tag for Istio images.
+  # tag: ""  # [DEFAULT] - Defaults to chart version
+
+  # Image pull policy
+  imagePullPolicy: IfNotPresent  # [DEFAULT]
+
+  # Predefined priority class name to ensure high priority
+  priorityClassName: ""  # [DEFAULT]
+
+# -----------------------------------------------------------------------------
+# Pilot (Istiod) Configuration
+# Purpose: Configuration for the Istio Control Plane (Pilot).
+# Importance:
+#   - autoscaleEnabled: true - Automatically scales Pilot based on load
+#   - autoscaleMin/Max: 1/5 - Scaling limits associated with HPA
+#   - replicas: 1 - Default replica count if autoscaling disabled
+# -----------------------------------------------------------------------------
+pilot:
+  autoscaleEnabled: true  # [DEFAULT]
+  autoscaleMin: 1  # [DEFAULT]
+  autoscaleMax: 5  # [DEFAULT]
+  replicaCount: 1  # [DEFAULT]
+
+  # Image used for the pilot (istiod)
+  image: pilot  # [DEFAULT]
+
+  # Trace sampling (1.0 = 100%, 0.01 = 1%)
+  traceSampling: 1.0  # [DEFAULT]
+
+  # Resources for Istiod
+  # Purpose: Ensures Istiod has guaranteed resources for stability.
+  resources:
+    requests:
+      cpu: 500m  # [DEFAULT]
+      memory: 512Mi  # [CUSTOM] Lowered from 2048Mi
+
+  # Environment Variables
+  # Purpose: Feature flags and low-level configuration.
+  env: {}  # [DEFAULT]
+
+  # Node Selector / Affinity
+  # Purpose: Control where Istiod pods are scheduled
+  nodeSelector: {}  # [DEFAULT]
+  affinity: {}  # [DEFAULT]
+  tolerations: []  # [DEFAULT]
+
+# -----------------------------------------------------------------------------
+# Telemetry Configuration [DEFAULT]
+# Purpose: Configures telemetry settings (v2).
+# Importance: Controls generation of metrics/traces.
+# -----------------------------------------------------------------------------
+telemetry:
+  enabled: true  # [DEFAULT]
+  v2:
+    enabled: true  # [DEFAULT]
+    metadataExchange:
+      wasmEnabled: false  # [DEFAULT]
+    prometheus:
+      wasmEnabled: false  # [DEFAULT]
+
+# -----------------------------------------------------------------------------
+# Mesh Configuration [DEFAULT]
+# Purpose: Defines the mesh-wide configuration (MeshConfig).
+# Importance:
+#   - accessLogFile: "/dev/stdout" - Enables Envoy access logs to stdout
+#   - enablePrometheusMerge: true - Merges app metrics with Envoy metrics
+# -----------------------------------------------------------------------------
+meshConfig:
+  enablePrometheusMerge: true  # [DEFAULT]
+  accessLogFile: "/dev/stdout"  # [CUSTOM] Enable access logs by default
+  defaultConfig:
+    proxyMetadata: {}  # [DEFAULT]
+
+# -----------------------------------------------------------------------------
+# Sidecar Injector Configuration [DEFAULT]
+# Purpose: Controls the automatic sidecar injection mechanism.
+# Importance:
+#   - enableNamespacesByDefault: false - Requires explicit namespace labeling
+# -----------------------------------------------------------------------------
+sidecarInjectorWebhook:
+  enableNamespacesByDefault: false  # [DEFAULT]

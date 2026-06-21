@@ -1,0 +1,123 @@
+# =============================================================================
+# Prometheus Helm Chart Values
+# Chart: https://github.com/prometheus-community/helm-charts/tree/main/charts/prometheus
+# =============================================================================
+# Legend:
+#   [CUSTOM]  - Values modified from chart defaults for this module
+#   [DEFAULT] - Chart default values (included for reference)
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# RBAC Configuration [DEFAULT]
+# Purpose: Create ClusterRoles for Prometheus to scrape targets.
+# -----------------------------------------------------------------------------
+rbac:
+  create: true # [DEFAULT]
+
+# -----------------------------------------------------------------------------
+# Service Account [DEFAULT]
+# Purpose: Service accounts for server, alertmanager, etc.
+# -----------------------------------------------------------------------------
+serviceAccounts:
+  server:
+    create: true # [DEFAULT]
+  alertmanager:
+    create: true # [DEFAULT]
+  nodeExporter:
+    create: true # [DEFAULT]
+  pushgateway:
+    create: true # [DEFAULT]
+
+# -----------------------------------------------------------------------------
+# Prometheus Server
+# Purpose: The main Prometheus server that scrapes and stores metrics.
+# Importance:
+#   - retention: 15d - How long to keep metrics
+#   - persistentVolume: enabled/disabled - storage for metrics
+# -----------------------------------------------------------------------------
+server:
+  enabled: true # [DEFAULT]
+
+  fullnameOverride: "prometheus-server" # [CUSTOM] Simpler name for DNS
+
+  # Retention Policy
+  retention: "15d" # [DEFAULT]
+
+  # External URL and Route Prefix
+  # IMPORTANT: Use prefixURL for the chart to auto-construct probe paths correctly
+  prefixURL: "/prometheus"
+  baseURL: "http://${domain_url}/prometheus"
+
+  # Persistence
+  # Purpose: Store metrics on disk (EBS/PVC).
+  persistentVolume:
+    enabled: true # [DEFAULT]
+    size: 8Gi # [DEFAULT]
+    accessModes:
+      - ReadWriteOnce # [DEFAULT]
+
+    # storageClass: "-"                                      # [DEFAULT] uses default class (gp2/gp3)
+
+  # Resources
+  # NOTE: Adjust base on cluster size.
+  resources:
+    limits:
+      cpu: 500m
+      memory: 512Mi
+    requests:
+      cpu: 250m
+      memory: 256Mi
+
+  # Service
+  service:
+    type: ClusterIP # [DEFAULT]
+    servicePort: 80 # [DEFAULT]
+
+  # Ingress
+  ingress:
+    enabled: true
+    ingressClassName: istio
+    annotations: {}
+      # kubernetes.io/ingress.class: istio
+    hosts:
+      - prometheus.local
+      - ${domain_url}
+    path: /
+    pathType: Prefix
+
+# -----------------------------------------------------------------------------
+# Alertmanager [DEFAULT]
+# Purpose: Handles alerts sent by Prometheus server.
+# -----------------------------------------------------------------------------
+alertmanager:
+  enabled: true # [DEFAULT]
+  persistence:
+    enabled: true # [DEFAULT]
+    size: 2Gi # [DEFAULT]
+
+# -----------------------------------------------------------------------------
+# Node Exporter [DEFAULT]
+# Purpose: Exports hardware and OS metrics exposed by *NIX kernels.
+# Importance: Runs as a DaemonSet on every node.
+# -----------------------------------------------------------------------------
+nodeExporter:
+  enabled: true # [DEFAULT]
+  hostNetwork: true # [DEFAULT] Required for access to node metrics
+  hostPID: true # [DEFAULT]
+
+# -----------------------------------------------------------------------------
+# Pushgateway [DEFAULT]
+# Purpose: Allows ephemeral and batch jobs to expose their metrics.
+# -----------------------------------------------------------------------------
+pushgateway:
+  enabled: true # [DEFAULT]
+
+# -----------------------------------------------------------------------------
+# ConfigMap Configuration [DEFAULT]
+# Purpose: Prometheus configuration file (prometheus.yml).
+# -----------------------------------------------------------------------------
+serverFiles:
+  alerting_rules.yml: {} # [DEFAULT]
+
+
+  # Default scrape configs

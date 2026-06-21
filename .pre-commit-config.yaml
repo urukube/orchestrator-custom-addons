@@ -1,0 +1,33 @@
+---
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v6.0.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-added-large-files
+
+  - repo: https://github.com/adrienverge/yamllint
+    rev: v1.37.1
+    hooks:
+      - id: yamllint
+  - repo: https://github.com/bridgecrewio/checkov.git
+    rev: "3.2.495"
+    hooks:
+      - id: checkov
+
+  - repo: local
+    hooks:
+      - id: terraform-docs
+        name: terraform-docs
+        language: docker_image
+        entry: quay.io/terraform-docs/terraform-docs:0.20.0
+        args:
+          - markdown
+          - --lockfile=false
+          - --output-file
+          - README.md
+          - .
+        pass_filenames: false

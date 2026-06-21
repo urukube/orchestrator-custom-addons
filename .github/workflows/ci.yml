@@ -1,0 +1,40 @@
+name: "custom-addons-ci"
+
+"on":
+  push:
+  pull_request:
+
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  terraform:
+    name: "terraform-check"
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: "1.14.2"
+
+      - name: Configure AWS Credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: us-east-1
+          role-to-assume: ${{ secrets.OC_ROLE_TO_ASSUME }}
+          role-session-name: githubactions-${{ github.run_id }}
+
+      - name: Terraform Init Setup
+        run: terraform init
+
+      - name: Terraform Test
+        run: terraform test

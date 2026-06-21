@@ -1,0 +1,110 @@
+# =============================================================================
+# Istio Gateway Helm Chart Values
+# Chart: https://github.com/istio/istio/tree/master/manifests/charts/gateway
+# =============================================================================
+# Legend:
+#   [CUSTOM]  - Values modified from chart defaults for this module
+#   [DEFAULT] - Chart default values (included for reference)
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# Deployment Configuration [DEFAULT]
+# Purpose: Define how the gateway deployment behaves.
+# Importance:
+#   - name: istio-ingressgateway - Standard name for the gateway
+#   - replicas: 1 - Start with 1, rely on autoscaling for more.
+# -----------------------------------------------------------------------------
+name: istio-ingressgateway # [DEFAULT]
+replicaCount: 1 # [DEFAULT]
+
+# -----------------------------------------------------------------------------
+# Service Configuration [CUSTOM]
+# Purpose: Expose the gateway specifically via a LoadBalancer.
+# Importance: This is the entry point for all external traffic.
+# -----------------------------------------------------------------------------
+service:
+  type: LoadBalancer # [CUSTOM] Expose externally
+  annotations:
+    service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+
+  # External Traffic Policy
+  # Cluster: Good for failover, keeps source IP if supported by CNI/Cloud
+  # Local: Preserves Source IP, routes only to local nodes (requires many replicas usually)
+  externalTrafficPolicy: Cluster # [DEFAULT]
+
+  ports:
+    - name: status-port
+      port: 15021
+      protocol: TCP
+      targetPort: 15021
+    - name: http2
+      port: 80
+      protocol: TCP
+      targetPort: 80
+    - name: https
+      port: 443
+      protocol: TCP
+      targetPort: 443
+
+# -----------------------------------------------------------------------------
+# Autoscaling Configuration [CUSTOM]
+# Purpose: Automatically scale the gateway based on traffic load.
+# Importance: Ensures high availability during traffic spikes.
+# -----------------------------------------------------------------------------
+autoscaling:
+  enabled: true # [CUSTOM] Enable HPA
+  minReplicas: 1 # [CUSTOM] Minimum pods
+  maxReplicas: 5 # [CUSTOM] Maximum pods
+  targetCPUUtilizationPercentage: 80 # [DEFAULT] Target 80% CPU
+
+# -----------------------------------------------------------------------------
+# Resource Configuration [DEFAULT]
+# Purpose: Guarantee resources for the gateway proxies.
+# Importance:
+#   - limits.cpu/memory: Cap usage to prevent starving other nodes.
+#   - requests.cpu/memory: Guarantee availability.
+# -----------------------------------------------------------------------------
+resources:
+  limits:
+    cpu: 2000m # [DEFAULT]
+    memory: 1024Mi # [DEFAULT]
+  requests:
+    cpu: 100m # [DEFAULT]
+    memory: 128Mi # [DEFAULT]
+
+# -----------------------------------------------------------------------------
+# Security Context [DEFAULT]
+# Purpose: Run the gateway with restricted permissions.
+# -----------------------------------------------------------------------------
+securityContext:
+  allowPrivilegeEscalation: false
+  capabilities:
+    drop:
+      - ALL
+  readOnlyRootFilesystem: true
+  runAsGroup: 1337
+  runAsNonRoot: true
+  runAsUser: 1337
+
+# -----------------------------------------------------------------------------
+# Labels & Annotations [DEFAULT]
+# Purpose: Add metadata to the gateway pods/service.
+# -----------------------------------------------------------------------------
+labels: {} # [DEFAULT]
+annotations: {} # [DEFAULT]
+
+# -----------------------------------------------------------------------------
+# RBAC [DEFAULT]
+# Purpose: Control permission for the gateway.
+# -----------------------------------------------------------------------------
+rbac:
+  enabled: true # [DEFAULT]
+
+# -----------------------------------------------------------------------------
+# Service Account [DEFAULT]
+# Purpose: Identity for the gateway pods.
+# -----------------------------------------------------------------------------
+serviceAccount:
+  create: true # [DEFAULT]
+  # name: ""                                                 # [DEFAULT]
+  annotations: {} # [DEFAULT]
