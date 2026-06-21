@@ -95,6 +95,24 @@ variable "argocd_version" {
   default     = "9.6.0"
 }
 
+variable "enable_crossplane" {
+  description = "Enable Crossplane infrastructure provisioning engine"
+  type        = bool
+  default     = false
+}
+
+variable "crossplane_version" {
+  description = "Version of the Crossplane Helm chart"
+  type        = string
+  default     = "1.19.0"
+}
+
+variable "crossplane_provider_aws_version" {
+  description = "Version of the upbound/provider-family-aws Crossplane provider"
+  type        = string
+  default     = "v1.21.0"
+}
+
 variable "enable_ecr" {
   description = "Enable ECR cross-account pull role for BU clusters"
   type        = bool

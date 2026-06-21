@@ -31,6 +31,8 @@ mock_provider "kubernetes" {}
 
 mock_provider "kubectl" {}
 
+mock_provider "time" {}
+
 run "setup" {
   module {
     source = "./tests/setup"
@@ -56,6 +58,7 @@ run "plan" {
     enable_kiali      = true
     enable_eso        = true
     enable_ecr        = true
+    enable_crossplane = true
 
     tags = {
       bu_id  = run.setup.bu_id
@@ -138,5 +141,26 @@ run "plan" {
   assert {
     condition     = length(aws_iam_role.ecr_cross_account) == 1
     error_message = "ECR cross-account pull role should be created"
+  }
+
+  # Verify Crossplane resources are created
+  assert {
+    condition     = length(helm_release.crossplane) == 1
+    error_message = "Crossplane Helm release should be created"
+  }
+
+  assert {
+    condition     = length(aws_iam_role.crossplane) == 1
+    error_message = "Crossplane IRSA role should be created"
+  }
+
+  assert {
+    condition     = length(kubectl_manifest.crossplane_provider_aws) == 1
+    error_message = "Crossplane AWS provider should be created"
+  }
+
+  assert {
+    condition     = length(kubectl_manifest.crossplane_provider_config) == 1
+    error_message = "Crossplane ProviderConfig should be created"
   }
 }
