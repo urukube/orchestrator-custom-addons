@@ -1,21 +1,39 @@
 
-run "setup" {
-  module {
-    source = "./tests/setup"
+mock_provider "aws" {
+  mock_data "aws_caller_identity" {
+    defaults = {
+      account_id = "123456789012"
+      arn        = "arn:aws:iam::123456789012:root"
+      user_id    = "AIDAEXAMPLE"
+    }
+  }
+
+  mock_data "aws_region" {
+    defaults = {
+      id     = "us-east-1"
+      name   = "us-east-1"
+      region = "us-east-1"
+    }
+  }
+
+  mock_data "aws_partition" {
+    defaults = {
+      id         = "aws"
+      partition  = "aws"
+      dns_suffix = "amazonaws.com"
+    }
   }
 }
 
-provider "kubernetes" {
-  host                   = run.setup.cluster_endpoint
-  cluster_ca_certificate = base64decode(run.setup.cluster_certificate_authority_data)
-  token                  = "mock-token"
-}
+mock_provider "helm" {}
 
-provider "helm" {
-  kubernetes = {
-    host                   = run.setup.cluster_endpoint
-    cluster_ca_certificate = base64decode(run.setup.cluster_certificate_authority_data)
-    token                  = "mock-token"
+mock_provider "kubernetes" {}
+
+mock_provider "kubectl" {}
+
+run "setup" {
+  module {
+    source = "./tests/setup"
   }
 }
 
@@ -30,13 +48,14 @@ run "plan" {
     cluster_oidc_provider_arn          = run.setup.cluster_oidc_provider_arn
     cluster_oidc_issuer_url            = run.setup.cluster_oidc_issuer_url
     env                                = run.setup.env
-    # vpc_id                             = run.setup.vpc_id # Custom addons dont use vpc_id currently, but keeping for consistency if needed
 
     # Toggles
     enable_istio      = true
     enable_argocd     = true
     enable_prometheus = true
     enable_kiali      = true
+    enable_eso        = true
+    enable_ecr        = true
 
     tags = {
       bu_id  = run.setup.bu_id
@@ -96,5 +115,28 @@ run "plan" {
   assert {
     condition     = length(kubectl_manifest.prometheus_vs) == 1
     error_message = "Prometheus VirtualService should be created"
+  }
+
+  # Verify ArgoCD IRSA role is created
+  assert {
+    condition     = length(aws_iam_role.argocd_orchestrator) == 1
+    error_message = "ArgoCD orchestrator IRSA role should be created"
+  }
+
+  # Verify ESO resources are created
+  assert {
+    condition     = length(aws_iam_role.eso) == 1
+    error_message = "ESO IRSA role should be created"
+  }
+
+  assert {
+    condition     = length(helm_release.external_secrets) == 1
+    error_message = "ESO Helm release should be created"
+  }
+
+  # Verify ECR cross-account role is created
+  assert {
+    condition     = length(aws_iam_role.ecr_cross_account) == 1
+    error_message = "ECR cross-account pull role should be created"
   }
 }
