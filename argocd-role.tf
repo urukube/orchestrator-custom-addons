@@ -1,25 +1,26 @@
 ################################################################################
-# ArgoCD Hub Role (IRSA)
-# Creates the ArgoCD IRSA role with ECR and EKS access
-# Allows ArgoCD default service account to assume this role.
+# ArgoCD Orchestrator Role (IRSA)
+# Creates the ArgoCD IRSA role on the orchestrator cluster.
+# ArgoCD running here will assume cross-account roles in BU clusters
+# (dev/prod) that are provisioned on demand — those target roles are
+# created at cluster-provisioning time, not here.
 ################################################################################
 
 locals {
-  # Role name standard
-  hub_role_name = "${var.cluster_name}-argocd-spoke-access"
+  argocd_role_name = "${var.cluster_name}-argocd"
 }
 
 # 1. IAM Role
-resource "aws_iam_role" "argocd_spoke_access" {
+resource "aws_iam_role" "argocd_orchestrator" {
   count = var.enable_argocd ? 1 : 0
-  name  = local.hub_role_name
+  name  = local.argocd_role_name
 
   assume_role_policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
       Effect = "Allow"
       Principal = {
-        Federated = "arn:aws:iam::${local.hub_account_id}:oidc-provider/${local.oidc_provider}"
+        Federated = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/${local.oidc_provider}"
       }
       Action = "sts:AssumeRoleWithWebIdentity"
       Condition = {
@@ -32,23 +33,23 @@ resource "aws_iam_role" "argocd_spoke_access" {
   })
 
   tags = merge(var.tags, {
-    Name      = local.hub_role_name
-    Purpose   = "ArgoCD hub cluster access"
+    Name      = local.argocd_role_name
+    Purpose   = "ArgoCD orchestrator IRSA"
     ManagedBy = "terraform-custom-addons"
   })
 }
 
-# 2. Wildcard "Assume Any Spoke" Policy
-# As requested, grants access to assume ANY role (Resource: *)
-resource "aws_iam_role_policy" "argocd_assume_wildcard" {
+# 2. Cross-Account Assume Policy
+# Grants ArgoCD the ability to assume roles in any BU cluster account.
+resource "aws_iam_role_policy" "argocd_assume_any_cluster" {
   count = var.enable_argocd ? 1 : 0
-  name  = "argocd-assume-any-spoke"
-  role  = aws_iam_role.argocd_spoke_access[0].id
+  name  = "argocd-assume-any-cluster"
+  role  = aws_iam_role.argocd_orchestrator[0].id
 
   policy = jsonencode({
     Version = "2012-10-17"
     Statement = [{
-      Sid      = "AssumeAnySpoke"
+      Sid      = "AssumeAnyCluster"
       Effect   = "Allow"
       Action   = "sts:AssumeRole"
       Resource = "*"
@@ -57,11 +58,11 @@ resource "aws_iam_role_policy" "argocd_assume_wildcard" {
 }
 
 # 3. EKS Describe Policy
-# Allows listing clusters (needed for K8s auth construction)
+# Allows listing/describing clusters (needed for K8s auth construction).
 resource "aws_iam_role_policy" "argocd_eks_describe" {
   count = var.enable_argocd ? 1 : 0
   name  = "argocd-eks-describe"
-  role  = aws_iam_role.argocd_spoke_access[0].id
+  role  = aws_iam_role.argocd_orchestrator[0].id
 
   policy = jsonencode({
     Version = "2012-10-17"
@@ -75,11 +76,11 @@ resource "aws_iam_role_policy" "argocd_eks_describe" {
 }
 
 # 4. ECR Access Policy
-# Allows Repo Server to fetch charts from ECR
+# Allows Repo Server to fetch charts from ECR.
 resource "aws_iam_role_policy" "argocd_ecr_access" {
   count = var.enable_argocd ? 1 : 0
   name  = "argocd-ecr-access"
-  role  = aws_iam_role.argocd_spoke_access[0].id
+  role  = aws_iam_role.argocd_orchestrator[0].id
 
   policy = jsonencode({
     Version = "2012-10-17"

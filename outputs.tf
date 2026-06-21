@@ -60,15 +60,15 @@ output "kiali_namespace" {
 }
 
 ################################################################################
-# Spoke ArgoCD Role Outputs
+# ArgoCD Orchestrator Role Outputs
 ################################################################################
 
-output "argocd_spoke_role_arn" {
-  description = "IAM role ARN for hub ArgoCD to assume (only for spoke clusters)"
-  value       = try(aws_iam_role.argocd_hub_assumable[0].arn, null)
+output "argocd_role_arn" {
+  description = "IAM role ARN for ArgoCD on the orchestrator cluster (IRSA)"
+  value       = try(aws_iam_role.argocd_orchestrator[0].arn, null)
 }
 
-output "argocd_spoke_role_name" {
-  description = "IAM role name for hub ArgoCD to assume (only for spoke clusters)"
-  value       = try(aws_iam_role.argocd_hub_assumable[0].name, null)
+output "argocd_role_name" {
+  description = "IAM role name for ArgoCD on the orchestrator cluster (IRSA)"
+  value       = try(aws_iam_role.argocd_orchestrator[0].name, null)
 }

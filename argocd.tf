@@ -27,9 +27,9 @@ resource "helm_release" "argocd" {
   values = [
     templatefile("${path.module}/yamls/argocd-values.yaml", {
       domain_url          = var.domain_url
-      argocd_iam_role_arn = aws_iam_role.argocd_spoke_access[0].arn
+      argocd_iam_role_arn = aws_iam_role.argocd_orchestrator[0].arn
       aws_region          = data.aws_region.current.region
-      aws_account_id      = local.hub_account_id
+      aws_account_id      = data.aws_caller_identity.current.account_id
     })
   ]
 

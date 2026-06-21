@@ -95,6 +95,18 @@ variable "argocd_version" {
   default     = "9.6.0"
 }
 
+variable "enable_ecr" {
+  description = "Enable ECR cross-account pull role for BU clusters"
+  type        = bool
+  default     = false
+}
+
+variable "enable_eso" {
+  description = "Enable External Secrets Operator addon"
+  type        = bool
+  default     = false
+}
+
 variable "enable_prometheus" {
   description = "Enable Prometheus addon"
   type        = bool
@@ -125,32 +137,6 @@ variable "eso_helm_version" {
   description = "Version of the External Secrets Operator Helm chart"
   type        = string
   default     = "2.6.0"
-}
-
-##################################################
-
-################HUB-SPOKE CONFIG##################
-
-variable "hub_cluster_name" {
-  description = "Name of the hub EKS cluster. Required for the spoke role trust policy."
-  type        = string
-  default     = ""
-
-  validation {
-    condition     = var.hub_cluster_name == "" || can(regex("^[a-zA-Z0-9-]+$", var.hub_cluster_name))
-    error_message = "hub_cluster_name must contain only alphanumeric characters and hyphens"
-  }
-}
-
-variable "hub_account_id" {
-  description = "AWS account ID where the hub cluster resides. Defaults to current account if not specified."
-  type        = string
-  default     = ""
-
-  validation {
-    condition     = var.hub_account_id == "" || can(regex("^[0-9]{12}$", var.hub_account_id))
-    error_message = "hub_account_id must be a 12-digit AWS account ID"
-  }
 }
 
 ##################################################

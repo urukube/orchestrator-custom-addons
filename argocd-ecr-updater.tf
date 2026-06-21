@@ -22,7 +22,7 @@ resource "aws_iam_role" "argocd_ecr_updater" {
     Statement = [{
       Effect = "Allow"
       Principal = {
-        Federated = "arn:aws:iam::${local.hub_account_id}:oidc-provider/${local.oidc_provider}"
+        Federated = "arn:aws:iam::${data.aws_caller_identity.current.account_id}:oidc-provider/${local.oidc_provider}"
       }
       Action = "sts:AssumeRoleWithWebIdentity"
       Condition = {
@@ -84,7 +84,7 @@ resource "kubernetes_service_account_v1" "argocd_ecr_updater" {
 }
 
 # 4. Role and RoleBinding to allow patching secrets
-resource "kubernetes_role" "argocd_secret_patcher" {
+resource "kubernetes_role_v1" "argocd_secret_patcher" {
   count = var.enable_argocd ? 1 : 0
 
   metadata {
@@ -100,7 +100,7 @@ resource "kubernetes_role" "argocd_secret_patcher" {
   }
 }
 
-resource "kubernetes_role_binding" "argocd_secret_patcher" {
+resource "kubernetes_role_binding_v1" "argocd_secret_patcher" {
   count = var.enable_argocd ? 1 : 0
 
   metadata {
@@ -111,7 +111,7 @@ resource "kubernetes_role_binding" "argocd_secret_patcher" {
   role_ref {
     api_group = "rbac.authorization.k8s.io"
     kind      = "Role"
-    name      = kubernetes_role.argocd_secret_patcher[0].metadata[0].name
+    name      = kubernetes_role_v1.argocd_secret_patcher[0].metadata[0].name
   }
 
   subject {
