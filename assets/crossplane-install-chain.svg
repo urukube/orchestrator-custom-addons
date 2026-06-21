@@ -1,0 +1,99 @@
+<svg viewBox="0 0 900 540" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif" font-size="12">
+  <title>Crossplane Install Chain — 4-Stage Sequence</title>
+  <desc>Sequential install chain: Helm installs core, 60s sleep waits for CRDs, DeploymentRuntimeConfig injects IRSA, Provider downloads AWS package, 120s sleep waits for provider CRDs, ProviderConfig wires IRSA credentials.</desc>
+  <defs>
+    <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#475569"/>
+    </marker>
+    <marker id="arr-gate" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#dc2626"/>
+    </marker>
+  </defs>
+
+  <rect width="900" height="540" fill="#ffffff"/>
+
+  <text x="450" y="26" text-anchor="middle" font-size="15" font-weight="700" fill="#111827">Crossplane Install Chain</text>
+  <text x="450" y="44" text-anchor="middle" font-size="11" fill="#6b7280">Each stage gates on the previous CRDs being registered in the Kubernetes API server</text>
+
+  <!-- ══ STAGE 1 ══ -->
+  <rect x="20" y="58" width="860" height="88" rx="8" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+  <rect x="20" y="58" width="860" height="26" rx="8" fill="#15803d"/>
+  <text x="450" y="75" text-anchor="middle" font-size="11" font-weight="700" fill="#ffffff">Stage 1 — Namespace + Helm  (registers core CRDs)</text>
+
+  <!-- namespace box -->
+  <rect x="36" y="92" width="180" height="44" rx="6" fill="#dcfce7" stroke="#4ade80" stroke-width="1.5"/>
+  <text x="126" y="110" text-anchor="middle" font-size="11" font-weight="600" fill="#14532d">kubernetes_namespace_v1</text>
+  <text x="126" y="126" text-anchor="middle" font-size="9" fill="#15803d">crossplane-system</text>
+
+  <line x1="216" y1="114" x2="232" y2="114" stroke="#475569" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- helm box -->
+  <rect x="236" y="92" width="180" height="44" rx="6" fill="#dcfce7" stroke="#4ade80" stroke-width="1.5"/>
+  <text x="326" y="110" text-anchor="middle" font-size="11" font-weight="600" fill="#14532d">helm_release.crossplane</text>
+  <text x="326" y="126" text-anchor="middle" font-size="9" fill="#15803d">charts.crossplane.io/stable</text>
+
+  <!-- CRDs registered note -->
+  <rect x="436" y="92" width="430" height="44" rx="6" fill="#166534" stroke="#4ade80" stroke-width="1"/>
+  <text x="651" y="108" text-anchor="middle" font-size="10" fill="#bbf7d0">CRDs now available in the API server:</text>
+  <text x="651" y="124" text-anchor="middle" font-size="10" fill="#86efac">Provider  ·  DeploymentRuntimeConfig  ·  Composition  ·  XRD  ·  CompositeResourceDefinition</text>
+
+  <!-- ══ GATE 1 ══ -->
+  <line x1="450" y1="146" x2="450" y2="162" stroke="#dc2626" stroke-width="2" stroke-dasharray="4,2" marker-end="url(#arr-gate)"/>
+  <rect x="296" y="150" width="308" height="18" rx="9" fill="#fee2e2" stroke="#fca5a5" stroke-width="1"/>
+  <text x="450" y="163" text-anchor="middle" font-size="9" font-weight="700" fill="#dc2626">⏱ 60s sleep — wait for Provider &amp; DeploymentRuntimeConfig CRDs to register</text>
+
+  <!-- ══ STAGE 2 ══ -->
+  <rect x="20" y="172" width="860" height="88" rx="8" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+  <rect x="20" y="172" width="860" height="26" rx="8" fill="#1d4ed8"/>
+  <text x="450" y="189" text-anchor="middle" font-size="11" font-weight="700" fill="#ffffff">Stage 2 — DeploymentRuntimeConfig  (injects IRSA identity onto provider pods)</text>
+
+  <rect x="36" y="206" width="320" height="44" rx="6" fill="#dbeafe" stroke="#93c5fd" stroke-width="1.5"/>
+  <text x="196" y="224" text-anchor="middle" font-size="11" font-weight="600" fill="#1e40af">kubectl_manifest · DeploymentRuntimeConfig</text>
+  <text x="196" y="238" text-anchor="middle" font-size="9" fill="#3b82f6">name: provider-aws-irsa</text>
+
+  <rect x="376" y="206" width="488" height="44" rx="6" fill="#1e3a8a" stroke="#93c5fd" stroke-width="1"/>
+  <text x="620" y="220" text-anchor="middle" font-size="10" fill="#bfdbfe">serviceAccountTemplate.metadata.annotations:</text>
+  <text x="620" y="236" text-anchor="middle" font-size="10" fill="#93c5fd">eks.amazonaws.com/role-arn: &lt;crossplane-IRSA-role-ARN&gt;</text>
+
+  <!-- ══ GATE 2 (no sleep, direct depends_on) ══ -->
+  <line x1="450" y1="260" x2="450" y2="276" stroke="#475569" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- ══ STAGE 3 ══ -->
+  <rect x="20" y="280" width="860" height="88" rx="8" fill="#fffbeb" stroke="#f59e0b" stroke-width="2"/>
+  <rect x="20" y="280" width="860" height="26" rx="8" fill="#b45309"/>
+  <text x="450" y="297" text-anchor="middle" font-size="11" font-weight="700" fill="#ffffff">Stage 3 — Provider  (downloads AWS provider package · registers all AWS resource CRDs)</text>
+
+  <rect x="36" y="314" width="320" height="44" rx="6" fill="#fef3c7" stroke="#fbbf24" stroke-width="1.5"/>
+  <text x="196" y="332" text-anchor="middle" font-size="11" font-weight="600" fill="#78350f">kubectl_manifest · Provider</text>
+  <text x="196" y="346" text-anchor="middle" font-size="9" fill="#92400e">upbound/provider-family-aws:&lt;version&gt;</text>
+
+  <rect x="376" y="314" width="488" height="44" rx="6" fill="#78350f" stroke="#fbbf24" stroke-width="1"/>
+  <text x="620" y="330" text-anchor="middle" font-size="10" fill="#fde68a">Provider pod pulls OCI package · starts sub-providers per AWS service group</text>
+  <text x="620" y="346" text-anchor="middle" font-size="10" fill="#fcd34d">Registers: VPC · Subnet · EKS Cluster · IAM Role · OIDC Provider · KMS · S3 CRDs</text>
+
+  <!-- ══ GATE 3 ══ -->
+  <line x1="450" y1="368" x2="450" y2="384" stroke="#dc2626" stroke-width="2" stroke-dasharray="4,2" marker-end="url(#arr-gate)"/>
+  <rect x="296" y="372" width="308" height="18" rx="9" fill="#fee2e2" stroke="#fca5a5" stroke-width="1"/>
+  <text x="450" y="385" text-anchor="middle" font-size="9" font-weight="700" fill="#dc2626">⏱ 120s sleep — wait for provider pod healthy + ProviderConfig CRD registered</text>
+
+  <!-- ══ STAGE 4 ══ -->
+  <rect x="20" y="394" width="860" height="88" rx="8" fill="#faf5ff" stroke="#8b5cf6" stroke-width="2"/>
+  <rect x="20" y="394" width="860" height="26" rx="8" fill="#6d28d9"/>
+  <text x="450" y="411" text-anchor="middle" font-size="11" font-weight="700" fill="#ffffff">Stage 4 — ProviderConfig  (tells the AWS provider to use IRSA for credentials)</text>
+
+  <rect x="36" y="428" width="320" height="44" rx="6" fill="#ede9fe" stroke="#c4b5fd" stroke-width="1.5"/>
+  <text x="196" y="446" text-anchor="middle" font-size="11" font-weight="600" fill="#4c1d95">kubectl_manifest · ProviderConfig</text>
+  <text x="196" y="460" text-anchor="middle" font-size="9" fill="#6d28d9">name: default · credentials.source: IRSA</text>
+
+  <rect x="376" y="428" width="488" height="44" rx="6" fill="#3b0764" stroke="#c4b5fd" stroke-width="1"/>
+  <text x="620" y="444" text-anchor="middle" font-size="10" fill="#ddd6fe">All Managed Resources reference this ProviderConfig by default.</text>
+  <text x="620" y="460" text-anchor="middle" font-size="10" fill="#c4b5fd">Provider authenticates to AWS via IRSA token exchange — no static credentials.</text>
+
+  <!-- ══ LEGEND ══ -->
+  <rect x="20" y="496" width="860" height="32" rx="6" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1"/>
+  <rect x="32" y="506" width="10" height="10" rx="2" fill="#15803d"/>
+  <text x="48" y="515" font-size="9" fill="#374151">Kubernetes / Helm resource applied by Terraform</text>
+  <rect x="230" y="506" width="10" height="10" rx="2" fill="#fee2e2" stroke="#dc2626" stroke-width="1"/>
+  <text x="246" y="515" font-size="9" fill="#374151">time_sleep gate — CRDs must exist before next stage</text>
+  <text x="500" y="515" font-size="9" fill="#6b7280">All resources are behind <tspan font-weight="700">count = var.enable_crossplane ? 1 : 0</tspan> — disabled by default</text>
+</svg>

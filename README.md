@@ -19,30 +19,7 @@ All addons are independently controlled via `enable_*` / `enable_argocd` variabl
 
 ### Dependency Graph
 
-```mermaid
-graph TD
-    subgraph "Istio Layer"
-        Base[Istio Base] --> Istiod[Istiod Control Plane]
-        Istiod --> Ingress[Istio Ingress Gateway]
-    end
-
-    subgraph "Addons Layer"
-        Ingress --> Prom[Prometheus]
-        Ingress --> Argo[ArgoCD]
-        Ingress --> Kiali
-    end
-
-    Istiod -.->|Sidecar Injection| Prom
-    Istiod -.->|Sidecar Injection| Argo
-
-    Prom -->|Metrics| Kiali
-
-    classDef istio fill:#90caf9,stroke:#0d47a1,stroke-width:2px,color:#000;
-    classDef addon fill:#ce93d8,stroke:#4a148c,stroke-width:2px,color:#000;
-
-    class Base,Istiod,Ingress istio;
-    class Prom,Argo,Kiali addon;
-```
+![Addon Dependency Graph](assets/addon-dependency-graph.svg)
 
 ### ArgoCD IAM Setup
 
@@ -59,6 +36,79 @@ When `enable_argocd = true`, two IAM roles are created:
 External Secrets Operator is always installed and wired to pull ECR credentials from the hub account. A `ClusterGenerator` fetches ECR auth tokens and a `ClusterExternalSecret` distributes the resulting pull secret to any namespace labeled `allow-hub-ecr-pull: "true"`.
 
 Requires `hub_account_id` to be set.
+
+---
+
+## Crossplane — Infrastructure Provisioning Engine
+
+Crossplane is the most complex addon in this module. It is the engine that turns a BU's environment request into real AWS infrastructure, provisioned inside the BU's own AWS accounts without any manual work.
+
+### What it does
+
+When `enable_crossplane = true`, Crossplane is installed on the orchestrator cluster and configured to watch for **Environment CRDs**. When a BU Admin submits a request via Backstage, Backstage creates that CRD. Crossplane reconciles it by assuming a cross-account IAM role in the BU's AWS account and building the full environment — VPC, subnets, EKS cluster, IRSA roles, OIDC provider, and bootstrap add-ons — from scratch, autonomously.
+
+### Install chain
+
+Crossplane cannot be installed in a single Terraform `apply` pass because each stage registers new CRDs that the next stage depends on. The install is broken into four sequential stages gated by `time_sleep` resources.
+
+![Crossplane Install Chain](assets/crossplane-install-chain.svg)
+
+| Stage | Resource | Gate | Why |
+|---|---|---|---|
+| **1** | `helm_release.crossplane` | 60s sleep | Helm returns before CRDs are registered. `Provider` and `DeploymentRuntimeConfig` kinds must exist in the API before Stage 2 can apply. |
+| **2** | `kubectl_manifest.crossplane_runtime_config` | none | Creates a `DeploymentRuntimeConfig` that injects the IRSA role ARN as a pod annotation onto every provider service account. Without this, provider pods have no AWS identity. |
+| **3** | `kubectl_manifest.crossplane_provider_aws` | 120s sleep | Crossplane pulls the `upbound/provider-family-aws` OCI package, starts sub-provider pods (one per AWS service group), and registers all AWS resource CRDs (`VPC`, `Subnet`, `EKS Cluster`, `IAM Role`, etc.). The 120s wait covers the OCI pull and pod startup time. |
+| **4** | `kubectl_manifest.crossplane_provider_config` | none | Creates the `ProviderConfig` (name: `default`) telling the AWS provider to source credentials from IRSA. All future Managed Resources reference this config. |
+
+#### Why two `time_sleep` values?
+
+- **60s after Helm**: CRD registration is near-instant once the Crossplane pod starts, but pod startup itself takes 20–40s. 60s is conservative headroom.
+- **120s after the Provider**: The provider must pull an OCI image (~200 MB), start multiple sub-provider pods, and register hundreds of CRDs. On a cold cluster with a fresh image pull, 120s is the practical minimum.
+
+### Cross-account provisioning
+
+Crossplane on the orchestrator (platform account) provisions infrastructure inside BU AWS accounts using a chain of IAM assumptions — no static credentials anywhere.
+
+![Crossplane Cross-Account Provisioning](assets/crossplane-cross-account.svg)
+
+#### Authentication chain
+
+1. The EKS OIDC provider issues a **projected ServiceAccount token** to the Crossplane provider pod at runtime.
+2. The pod presents that token to STS via `sts:AssumeRoleWithWebIdentity` — IRSA — and receives short-lived credentials for the **Crossplane IAM role** in the platform account. Credentials rotate automatically every 15 minutes.
+3. The Crossplane IAM role has `sts:AssumeRole` on `*`. When reconciling a BU environment CRD, Crossplane calls `sts:AssumeRole` against a **pre-created cross-account role in the BU's AWS account** and receives credentials scoped to that account.
+4. Using those credentials, Crossplane creates all resources (VPC, subnets, EKS, IAM roles, OIDC provider) inside the BU account.
+
+#### IRSA trust policy — why `StringLike`?
+
+```json
+"StringLike": {
+  "<oidc-provider>:sub": [
+    "system:serviceaccount:crossplane-system:provider-aws-*",
+    "system:serviceaccount:crossplane-system:upbound-provider-aws-*"
+  ]
+}
+```
+
+The Upbound family provider spawns **one sub-provider pod per AWS service group** (e.g. `upbound-provider-aws-ec2`, `upbound-provider-aws-eks`, `upbound-provider-aws-iam`), each with its own Kubernetes service account. `StringEquals` would require enumerating every sub-provider name and updating the trust policy whenever a new sub-provider is added. `StringLike` with a wildcard covers all current and future sub-providers with no IAM changes.
+
+#### What the Crossplane IAM role can do
+
+| Permission group | Actions | Purpose |
+|---|---|---|
+| `EC2` | `ec2:*` | VPC, subnets, route tables, NAT GW, security groups, launch templates |
+| `EKS` | `eks:*` | EKS control plane, node groups, access entries |
+| `IAM` | Scoped list | IRSA roles, OIDC providers, instance profiles — scoped to exact actions, not `iam:*` |
+| `KMS` | Scoped list | EBS encryption keys for BU cluster nodes |
+| `S3` | Scoped list | Terraform state buckets and BU S3 resources |
+| `STS` | `sts:AssumeRole` on `*` | Cross-account entry into each BU AWS account |
+
+#### What the BU must prepare (once)
+
+Before Crossplane can provision into a BU account, the BU (or platform team on their behalf) must create a **cross-account IAM role** in that account with:
+- A trust policy allowing `sts:AssumeRole` from the platform account's Crossplane role ARN
+- Permissions sufficient to build the resources listed above
+
+This role is created once per BU account (dev and prod separately) and never changes.
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements

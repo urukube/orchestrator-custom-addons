@@ -1,0 +1,128 @@
+<svg viewBox="0 0 900 480" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif" font-size="12">
+  <title>Crossplane Cross-Account Provisioning Flow</title>
+  <desc>How Crossplane on the orchestrator cluster authenticates via IRSA and assumes cross-account IAM roles to provision VPCs, EKS clusters, and IAM roles inside separate BU AWS accounts.</desc>
+  <defs>
+    <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#475569"/>
+    </marker>
+    <marker id="arr-blue" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#3b82f6"/>
+    </marker>
+    <marker id="arr-amber" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#f59e0b"/>
+    </marker>
+    <marker id="arr-green" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#10b981"/>
+    </marker>
+  </defs>
+
+  <rect width="900" height="480" fill="#ffffff"/>
+
+  <text x="450" y="24" text-anchor="middle" font-size="15" font-weight="700" fill="#111827">Crossplane Cross-Account Provisioning</text>
+  <text x="450" y="42" text-anchor="middle" font-size="11" fill="#6b7280">Crossplane in the platform account assumes a pre-created IAM role in each BU's AWS account to build infra there</text>
+
+  <!-- ══ PLATFORM AWS ACCOUNT ══ -->
+  <rect x="20" y="56" width="380" height="310" rx="10" fill="#f8fafc" stroke="#6366f1" stroke-width="2"/>
+  <rect x="20" y="56" width="380" height="28" rx="10" fill="#4f46e5"/>
+  <text x="210" y="74" text-anchor="middle" font-size="11" font-weight="700" fill="#ffffff">Platform AWS Account  (Orchestrator)</text>
+
+  <!-- BU Engineer triggers -->
+  <rect x="36" y="96" width="348" height="42" rx="6" fill="#dbeafe" stroke="#3b82f6" stroke-width="1.5"/>
+  <text x="210" y="112" text-anchor="middle" font-size="10" font-weight="600" fill="#1e40af">① BU Admin submits Environment CRD via Backstage</text>
+  <text x="210" y="128" text-anchor="middle" font-size="9" fill="#3b82f6">CRD carries: BU name · dev account ID · prod account ID · region · sizing</text>
+
+  <!-- arrow down -->
+  <line x1="210" y1="138" x2="210" y2="154" stroke="#475569" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Crossplane controller -->
+  <rect x="36" y="158" width="348" height="54" rx="6" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5"/>
+  <text x="210" y="176" text-anchor="middle" font-size="11" font-weight="600" fill="#78350f">② Crossplane controller reconciles CRD</text>
+  <text x="210" y="192" text-anchor="middle" font-size="9" fill="#92400e">Provider pod reads the CRD · determines target BU account IDs</text>
+  <text x="210" y="206" text-anchor="middle" font-size="9" fill="#92400e">Looks up ProviderConfig → credential source: IRSA</text>
+
+  <!-- arrow down: IRSA exchange -->
+  <line x1="210" y1="212" x2="210" y2="228" stroke="#475569" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- IRSA box -->
+  <rect x="36" y="232" width="348" height="60" rx="6" fill="#ede9fe" stroke="#8b5cf6" stroke-width="1.5"/>
+  <text x="210" y="250" text-anchor="middle" font-size="11" font-weight="600" fill="#4c1d95">③ IRSA token exchange</text>
+  <text x="210" y="265" text-anchor="middle" font-size="9" fill="#6d28d9">EKS OIDC issues projected ServiceAccount token to provider pod</text>
+  <text x="210" y="279" text-anchor="middle" font-size="9" fill="#6d28d9">STS validates token → issues short-lived credentials for Crossplane IAM role</text>
+  <text x="210" y="291" text-anchor="middle" font-size="9" fill="#8b5cf6">No static keys · credentials rotate automatically every 15 min</text>
+
+  <!-- arrow down: cross-account STS -->
+  <line x1="210" y1="292" x2="210" y2="308" stroke="#475569" stroke-width="1.5" marker-end="url(#arr)"/>
+
+  <!-- Cross-account STS -->
+  <rect x="36" y="312" width="348" height="44" rx="6" fill="#fee2e2" stroke="#f87171" stroke-width="1.5"/>
+  <text x="210" y="330" text-anchor="middle" font-size="11" font-weight="600" fill="#7f1d1d">④ sts:AssumeRole → BU account</text>
+  <text x="210" y="346" text-anchor="middle" font-size="9" fill="#991b1b">Crossplane role has sts:AssumeRole on * · assumes pre-created role in BU account</text>
+
+  <!-- Crossplane IAM role badge -->
+  <rect x="36" y="370" width="348" height="30" rx="5" fill="#312e81"/>
+  <text x="210" y="381" text-anchor="middle" font-size="9" font-weight="600" fill="#e0e7ff">Crossplane IAM Role  ({cluster-name}-crossplane)</text>
+  <text x="210" y="393" text-anchor="middle" font-size="9" fill="#a5b4fc">Trust: StringLike on provider-aws-* + upbound-provider-aws-*  service accounts</text>
+
+  <!-- ══ ARROWS to BU accounts ══ -->
+  <!-- dev arrow -->
+  <path d="M400,272 C500,272 500,210 520,210" stroke="#10b981" stroke-width="2" fill="none" marker-end="url(#arr-green)"/>
+  <text x="456" y="264" font-size="9" font-weight="700" fill="#059669">sts:AssumeRole</text>
+  <text x="456" y="276" font-size="9" fill="#059669">dev account</text>
+
+  <!-- prod arrow -->
+  <path d="M400,340 C500,340 500,360 520,360" stroke="#10b981" stroke-width="2" fill="none" marker-end="url(#arr-green)"/>
+  <text x="456" y="352" font-size="9" font-weight="700" fill="#059669">sts:AssumeRole</text>
+  <text x="456" y="364" font-size="9" fill="#059669">prod account</text>
+
+  <!-- ══ BU DEV AWS ACCOUNT ══ -->
+  <rect x="520" y="56" width="360" height="178" rx="10" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+  <rect x="520" y="56" width="360" height="28" rx="10" fill="#15803d"/>
+  <text x="700" y="74" text-anchor="middle" font-size="11" font-weight="700" fill="#ffffff">BU Dev AWS Account</text>
+
+  <!-- pre-created trust role -->
+  <rect x="534" y="92" width="332" height="30" rx="5" fill="#166534" stroke="#4ade80" stroke-width="1"/>
+  <text x="700" y="105" text-anchor="middle" font-size="9" font-weight="600" fill="#bbf7d0">Pre-created cross-account role  (trusts platform account)</text>
+  <text x="700" y="118" text-anchor="middle" font-size="9" fill="#86efac">BU creates this once · grants Crossplane permission to build infra here</text>
+
+  <!-- Resources provisioned -->
+  <text x="700" y="140" text-anchor="middle" font-size="10" font-weight="700" fill="#166534">⑤ Crossplane provisions:</text>
+  <rect x="534" y="146" width="74" height="18" rx="3" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
+  <text x="571" y="159" text-anchor="middle" font-size="9" fill="#14532d">VPC</text>
+  <rect x="616" y="146" width="110" height="18" rx="3" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
+  <text x="671" y="159" text-anchor="middle" font-size="9" fill="#14532d">1 public + 2 private subnets</text>
+  <rect x="734" y="146" width="52" height="18" rx="3" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
+  <text x="760" y="159" text-anchor="middle" font-size="9" fill="#14532d">NAT GW</text>
+  <rect x="794" y="146" width="52" height="18" rx="3" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
+  <text x="820" y="159" text-anchor="middle" font-size="9" fill="#14532d">IGW</text>
+  <rect x="534" y="170" width="74" height="18" rx="3" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
+  <text x="571" y="183" text-anchor="middle" font-size="9" fill="#14532d">EKS cluster</text>
+  <rect x="616" y="170" width="86" height="18" rx="3" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
+  <text x="659" y="183" text-anchor="middle" font-size="9" fill="#14532d">Self-managed nodes</text>
+  <rect x="710" y="170" width="86" height="18" rx="3" fill="#dcfce7" stroke="#86efac" stroke-width="1"/>
+  <text x="753" y="183" text-anchor="middle" font-size="9" fill="#14532d">IRSA roles + OIDC</text>
+  <rect x="534" y="194" width="74" height="18" rx="3" fill="#fce7f3" stroke="#f9a8d4" stroke-width="1"/>
+  <text x="571" y="207" text-anchor="middle" font-size="9" fill="#831843">ArgoCD agent</text>
+  <rect x="616" y="194" width="50" height="18" rx="3" fill="#fce7f3" stroke="#f9a8d4" stroke-width="1"/>
+  <text x="641" y="207" text-anchor="middle" font-size="9" fill="#831843">ESO</text>
+  <rect x="674" y="194" width="50" height="18" rx="3" fill="#fce7f3" stroke="#f9a8d4" stroke-width="1"/>
+  <text x="699" y="207" text-anchor="middle" font-size="9" fill="#831843">Cilium</text>
+  <text x="836" y="207" text-anchor="middle" font-size="9" font-style="italic" fill="#6b7280">add-ons</text>
+
+  <!-- ══ BU PROD AWS ACCOUNT ══ -->
+  <rect x="520" y="302" width="360" height="124" rx="10" fill="#fffbeb" stroke="#d97706" stroke-width="2"/>
+  <rect x="520" y="302" width="360" height="28" rx="10" fill="#92400e"/>
+  <text x="700" y="320" text-anchor="middle" font-size="11" font-weight="700" fill="#ffffff">BU Prod AWS Account</text>
+
+  <rect x="534" y="338" width="332" height="30" rx="5" fill="#78350f" stroke="#fbbf24" stroke-width="1"/>
+  <text x="700" y="351" text-anchor="middle" font-size="9" font-weight="600" fill="#fde68a">Pre-created cross-account role  (trusts platform account)</text>
+  <text x="700" y="364" text-anchor="middle" font-size="9" fill="#fcd34d">Same trust pattern as dev · separate account boundary</text>
+
+  <text x="700" y="386" text-anchor="middle" font-size="10" font-weight="700" fill="#92400e">⑤ Same resources provisioned independently</text>
+  <text x="700" y="402" text-anchor="middle" font-size="9" fill="#b45309">VPC · Subnets · EKS · IRSA · OIDC · Add-ons</text>
+  <text x="700" y="416" text-anchor="middle" font-size="9" font-style="italic" fill="#d97706">Prod may use stricter node sizing and policy — driven by CRD inputs</text>
+
+  <!-- ══ ArgoCD post-provisioning ══ -->
+  <rect x="20" y="420" width="860" height="48" rx="8" fill="#f8fafc" stroke="#e2e8f0" stroke-width="1.5"/>
+  <text x="450" y="438" text-anchor="middle" font-size="10" font-weight="700" fill="#334155">⑥ After provisioning completes</text>
+  <text x="450" y="454" text-anchor="middle" font-size="10" fill="#475569">Crossplane registers the new cluster's kubeconfig with ArgoCD on the orchestrator · ArgoCD deploys app-of-apps (ingress, cert-manager, observability, policy) · BU developers can now push code</text>
+</svg>
