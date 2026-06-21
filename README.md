@@ -21,21 +21,49 @@ All addons are independently controlled via `enable_*` / `enable_argocd` variabl
 
 ![Addon Dependency Graph](assets/addon-dependency-graph.svg)
 
-### ArgoCD IAM Setup
+---
 
-When `enable_argocd = true`, two IAM roles are created:
+## ArgoCD
 
-**Hub role** (`argocd-hub-role.tf`) — IRSA role for the ArgoCD service accounts (`argocd-application-controller`, `argocd-repo-server`). Grants:
-- `ecr:*` — pull Helm charts and images from ECR
-- `eks:DescribeCluster` — build Kubernetes auth tokens for managed clusters
+![ArgoCD Architecture](assets/argocd-architecture.svg)
 
-**Spoke role** (`argocd-spoke-role.tf`) — assumable by the hub ArgoCD role. Created on clusters that ArgoCD manages remotely. Requires `hub_cluster_name` to be set. Grants cluster-admin via EKS Access API.
+When `enable_argocd = true`, four resources are created across three files:
 
-### ESO ECR Pull
+### `argocd.tf` — Helm release
 
-External Secrets Operator is always installed and wired to pull ECR credentials from the hub account. A `ClusterGenerator` fetches ECR auth tokens and a `ClusterExternalSecret` distributes the resulting pull secret to any namespace labeled `allow-hub-ecr-pull: "true"`.
+Installs ArgoCD via the `argo/argo-cd` Helm chart into the `argocd` namespace. The namespace is labeled `istio-injection: enabled` so all ArgoCD pods get an Istio sidecar — **except** Redis and init containers, which have `sidecar.istio.io/inject: "false"` set in `argocd-values.yaml` because Istio intercepts their traffic before readiness is established.
 
-Requires `hub_account_id` to be set.
+The Helm values template wires in the ArgoCD IRSA role ARN so the `argocd-application-controller` and `argocd-repo-server` service accounts are annotated for IRSA at install time.
+
+### `argocd-role.tf` — Single IRSA role (not hub/spoke)
+
+One IAM role (`{cluster-name}-argocd`) is created for ArgoCD on the orchestrator. It is trusted by exactly two service accounts via `StringEquals`:
+- `argocd-application-controller` — reconciles cluster state
+- `argocd-repo-server` — fetches Helm charts and manifests from ECR
+
+Three inline policies are attached:
+
+| Policy | Permission | Why |
+|---|---|---|
+| `argocd-assume-any-cluster` | `sts:AssumeRole` on `*` | ArgoCD assumes a pre-created role on each remote BU cluster (registered at provision time) to deploy into it |
+| `argocd-eks-describe` | `eks:DescribeCluster` on `*` | Required to construct the Kubernetes bearer token for the remote cluster API server |
+| `argocd-ecr-access` | ECR pull actions | Repo Server fetches OCI Helm charts and images from the platform ECR registry |
+
+> **No spoke role is created here.** The role that ArgoCD assumes on each BU cluster is created at cluster-provisioning time by Crossplane — not by this module.
+
+### `argocd-ecr-updater.tf` — ECR token refresh CronJob
+
+ECR tokens expire after **12 hours**. ArgoCD needs a valid token in a Kubernetes Secret to pull from ECR. Rather than using a long-lived credential, a lightweight CronJob refreshes the token every **6 hours** (2× safety margin before expiry).
+
+The CronJob flow:
+1. Pod runs on schedule `0 */6 * * *` using `amazon/aws-cli:latest`
+2. Calls `aws ecr get-login-password` — authenticated via its own dedicated IRSA role (`{cluster-name}-argocd-ecr-updater`)
+3. Base64-encodes the token and patches the Secret `argocd-repo-aws-ecr-<region>` in the `argocd` namespace
+4. RBAC is scoped tightly: a `Role` grants only `get` and `patch` on that one named secret — no broader cluster access
+
+### `argocd-image-updater.tf` — Automatic image tag tracking
+
+ArgoCD Image Updater polls the ECR registry every **1 minute** and automatically updates ArgoCD `Application` image tags when a new image is pushed. It reuses the ECR secret maintained by the CronJob above — configured via `credentials: secret:argocd-repo-aws-ecr-<region>`.
 
 ---
 

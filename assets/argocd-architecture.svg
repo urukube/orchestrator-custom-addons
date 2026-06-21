@@ -1,0 +1,148 @@
+<svg viewBox="0 0 900 560" xmlns="http://www.w3.org/2000/svg" font-family="system-ui, -apple-system, sans-serif" font-size="12">
+  <title>ArgoCD Architecture — Orchestrator</title>
+  <desc>ArgoCD on the orchestrator cluster: single IRSA role with three permission policies, ECR updater CronJob that refreshes the ECR token secret every 6 hours, Image Updater polling ECR every minute, and ArgoCD managing remote BU clusters via cross-account STS assume.</desc>
+  <defs>
+    <marker id="arr" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#475569"/>
+    </marker>
+    <marker id="arr-amber" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#d97706"/>
+    </marker>
+    <marker id="arr-green" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#16a34a"/>
+    </marker>
+    <marker id="arr-blue" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#3b82f6"/>
+    </marker>
+    <marker id="arr-purple" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+      <path d="M0,0 L0,6 L8,3 z" fill="#8b5cf6"/>
+    </marker>
+  </defs>
+
+  <rect width="900" height="560" fill="#ffffff"/>
+
+  <text x="450" y="24" text-anchor="middle" font-size="15" font-weight="700" fill="#111827">ArgoCD — Orchestrator Architecture</text>
+  <text x="450" y="42" text-anchor="middle" font-size="11" fill="#6b7280">One IRSA role · ECR token refresh CronJob · Image Updater · cross-account remote cluster management</text>
+
+  <!-- ══ ORCHESTRATOR CLUSTER ══ -->
+  <rect x="20" y="56" width="560" height="390" rx="10" fill="#f8fafc" stroke="#6366f1" stroke-width="2"/>
+  <rect x="20" y="56" width="560" height="26" rx="10" fill="#4f46e5"/>
+  <text x="300" y="73" text-anchor="middle" font-size="11" font-weight="700" fill="#ffffff">Orchestrator Cluster  (namespace: argocd)</text>
+
+  <!-- ── ArgoCD Helm ── -->
+  <rect x="36" y="92" width="240" height="54" rx="7" fill="#fef3c7" stroke="#f59e0b" stroke-width="2"/>
+  <text x="156" y="112" text-anchor="middle" font-size="12" font-weight="700" fill="#78350f">ArgoCD</text>
+  <text x="156" y="128" text-anchor="middle" font-size="9" fill="#92400e">helm: argo/argo-cd  v9.6.0</text>
+  <text x="156" y="140" text-anchor="middle" font-size="9" fill="#92400e">istio-injection: enabled on namespace</text>
+
+  <!-- ── Image Updater ── -->
+  <rect x="296" y="92" width="268" height="54" rx="7" fill="#fef3c7" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="5,3"/>
+  <text x="430" y="112" text-anchor="middle" font-size="12" font-weight="700" fill="#78350f">ArgoCD Image Updater</text>
+  <text x="430" y="128" text-anchor="middle" font-size="9" fill="#92400e">helm: argocd-image-updater  v1.2.2</text>
+  <text x="430" y="140" text-anchor="middle" font-size="9" fill="#92400e">Polls ECR every 1 min · updates Application image tags</text>
+
+  <!-- arrow: Image Updater reads ECR secret -->
+  <line x1="430" y1="146" x2="430" y2="226" stroke="#f59e0b" stroke-width="1.5" stroke-dasharray="4,2" marker-end="url(#arr-amber)"/>
+  <text x="436" y="190" font-size="8" fill="#b45309" font-style="italic">reads ECR secret</text>
+
+  <!-- ── ECR Secret ── -->
+  <rect x="296" y="230" width="268" height="44" rx="6" fill="#1e293b" stroke="#475569" stroke-width="1.5"/>
+  <text x="430" y="249" text-anchor="middle" font-size="10" font-weight="600" fill="#f8fafc">Secret: argocd-repo-aws-ecr-&lt;region&gt;</text>
+  <text x="430" y="264" text-anchor="middle" font-size="9" fill="#94a3b8">username: AWS · password: &lt;ECR token, 12h TTL&gt;</text>
+
+  <!-- ── ECR Updater CronJob ── -->
+  <rect x="36" y="168" width="240" height="130" rx="7" fill="#eff6ff" stroke="#3b82f6" stroke-width="2"/>
+  <text x="156" y="188" text-anchor="middle" font-size="11" font-weight="700" fill="#1e40af">ECR Updater CronJob</text>
+  <text x="156" y="204" text-anchor="middle" font-size="9" fill="#1d4ed8">schedule: 0 */6 * * *  (every 6 hours)</text>
+  <text x="156" y="222" text-anchor="middle" font-size="9" fill="#3b82f6">1. aws ecr get-login-password</text>
+  <text x="156" y="237" text-anchor="middle" font-size="9" fill="#3b82f6">2. base64-encode token</text>
+  <text x="156" y="252" text-anchor="middle" font-size="9" fill="#3b82f6">3. kubectl patch secret</text>
+  <text x="156" y="270" text-anchor="middle" font-size="9" font-style="italic" fill="#60a5fa">RBAC: Role scoped to patch that one secret only</text>
+  <text x="156" y="284" text-anchor="middle" font-size="9" fill="#60a5fa">image: amazon/aws-cli:latest</text>
+
+  <!-- arrow: CronJob patches ECR secret -->
+  <line x1="276" y1="248" x2="294" y2="248" stroke="#3b82f6" stroke-width="1.5" marker-end="url(#arr-blue)"/>
+  <text x="285" y="243" text-anchor="middle" font-size="8" fill="#3b82f6">patches</text>
+
+  <!-- ── IRSA Role box ── -->
+  <rect x="36" y="318" width="528" height="118" rx="7" fill="#4f46e5" stroke="#3730a3" stroke-width="2"/>
+  <text x="300" y="337" text-anchor="middle" font-size="11" font-weight="700" fill="#ffffff">ArgoCD IRSA Role  ({cluster-name}-argocd)  ←  argocd-role.tf</text>
+  <text x="300" y="353" text-anchor="middle" font-size="9" fill="#c7d2fe">Trust: StringEquals on argocd-application-controller + argocd-repo-server service accounts</text>
+
+  <!-- 3 policy chips -->
+  <rect x="48" y="362" width="160" height="62" rx="5" fill="#312e81" stroke="#818cf8" stroke-width="1"/>
+  <text x="128" y="378" text-anchor="middle" font-size="9" font-weight="700" fill="#e0e7ff">AssumeAnyCluster</text>
+  <text x="128" y="393" text-anchor="middle" font-size="9" fill="#a5b4fc">sts:AssumeRole on *</text>
+  <text x="128" y="408" text-anchor="middle" font-size="9" fill="#a5b4fc">Allows remote cluster</text>
+  <text x="128" y="421" text-anchor="middle" font-size="9" fill="#a5b4fc">management via cross-acct</text>
+
+  <rect x="220" y="362" width="160" height="62" rx="5" fill="#312e81" stroke="#818cf8" stroke-width="1"/>
+  <text x="300" y="378" text-anchor="middle" font-size="9" font-weight="700" fill="#e0e7ff">EKSDescribe</text>
+  <text x="300" y="393" text-anchor="middle" font-size="9" fill="#a5b4fc">eks:DescribeCluster on *</text>
+  <text x="300" y="408" text-anchor="middle" font-size="9" fill="#a5b4fc">Builds K8s auth token</text>
+  <text x="300" y="421" text-anchor="middle" font-size="9" fill="#a5b4fc">for managed clusters</text>
+
+  <rect x="392" y="362" width="160" height="62" rx="5" fill="#312e81" stroke="#818cf8" stroke-width="1"/>
+  <text x="472" y="378" text-anchor="middle" font-size="9" font-weight="700" fill="#e0e7ff">ECRAccess</text>
+  <text x="472" y="393" text-anchor="middle" font-size="9" fill="#a5b4fc">ecr:GetAuthorizationToken</text>
+  <text x="472" y="408" text-anchor="middle" font-size="9" fill="#a5b4fc">+ pull actions</text>
+  <text x="472" y="421" text-anchor="middle" font-size="9" fill="#a5b4fc">Repo Server fetches charts</text>
+
+  <!-- Separate IRSA role for ECR Updater -->
+  <rect x="36" y="450" width="528" height="30" rx="5" fill="#1e40af" stroke="#93c5fd" stroke-width="1"/>
+  <text x="300" y="460" text-anchor="middle" font-size="9" font-weight="700" fill="#dbeafe">ECR Updater IRSA Role  ({cluster-name}-argocd-ecr-updater)  ←  argocd-ecr-updater.tf</text>
+  <text x="300" y="474" text-anchor="middle" font-size="9" fill="#93c5fd">Trust: StringEquals on argocd-ecr-updater SA · Policy: ecr:GetAuthorizationToken + pull actions</text>
+
+  <!-- ══ EXTERNAL ══ -->
+
+  <!-- ECR -->
+  <rect x="620" y="56" width="260" height="130" rx="10" fill="#fff7ed" stroke="#fb923c" stroke-width="2"/>
+  <rect x="620" y="56" width="260" height="26" rx="10" fill="#c2410c"/>
+  <text x="750" y="73" text-anchor="middle" font-size="11" font-weight="700" fill="#ffffff">Amazon ECR</text>
+  <text x="750" y="100" text-anchor="middle" font-size="10" fill="#9a3412">Platform account registry</text>
+  <text x="750" y="118" text-anchor="middle" font-size="9" fill="#c2410c">Helm charts (OCI)</text>
+  <text x="750" y="134" text-anchor="middle" font-size="9" fill="#c2410c">Application images</text>
+  <text x="750" y="152" text-anchor="middle" font-size="9" fill="#c2410c">Token TTL: 12 hours</text>
+  <text x="750" y="172" text-anchor="middle" font-size="9" font-style="italic" fill="#ea580c">CronJob refreshes every 6h — 2× safety margin</text>
+
+  <!-- ECR Updater → ECR -->
+  <path d="M276,210 C430,210 570,130 618,100" stroke="#3b82f6" stroke-width="1.5" fill="none" marker-end="url(#arr-blue)"/>
+  <text x="430" y="174" text-anchor="middle" font-size="8" fill="#3b82f6">ecr:GetAuthorizationToken</text>
+
+  <!-- Image Updater → ECR -->
+  <line x1="564" y1="110" x2="618" y2="100" stroke="#f59e0b" stroke-width="1.5" marker-end="url(#arr-amber)"/>
+  <text x="594" y="102" text-anchor="middle" font-size="8" fill="#b45309">poll 1m</text>
+
+  <!-- BU Clusters -->
+  <rect x="620" y="210" width="260" height="170" rx="10" fill="#f0fdf4" stroke="#16a34a" stroke-width="2"/>
+  <rect x="620" y="210" width="260" height="26" rx="10" fill="#15803d"/>
+  <text x="750" y="227" text-anchor="middle" font-size="11" font-weight="700" fill="#ffffff">BU Workload Clusters</text>
+
+  <rect x="634" y="246" width="232" height="54" rx="6" fill="#dcfce7" stroke="#4ade80" stroke-width="1"/>
+  <text x="750" y="264" text-anchor="middle" font-size="10" font-weight="600" fill="#14532d">BU-A  dev cluster</text>
+  <text x="750" y="279" text-anchor="middle" font-size="9" fill="#16a34a">ArgoCD agent registered at provision time</text>
+  <text x="750" y="292" text-anchor="middle" font-size="9" fill="#16a34a">ArgoCD assumes role → deploys app-of-apps</text>
+
+  <rect x="634" y="308" width="232" height="54" rx="6" fill="#fef9c3" stroke="#fbbf24" stroke-width="1"/>
+  <text x="750" y="326" text-anchor="middle" font-size="10" font-weight="600" fill="#713f12">BU-A  prod cluster</text>
+  <text x="750" y="341" text-anchor="middle" font-size="9" fill="#92400e">Promotion via Kargo (Phase 2)</text>
+  <text x="750" y="354" text-anchor="middle" font-size="9" fill="#92400e">Argo Rollouts: canary / blue-green</text>
+
+  <text x="750" y="374" text-anchor="middle" font-size="9" font-style="italic" fill="#64748b">More BU clusters added on demand</text>
+
+  <!-- ArgoCD → BU clusters (cross-account) -->
+  <path d="M580,130 C608,130 608,273 618,273" stroke="#6366f1" stroke-width="2" fill="none" marker-end="url(#arr-purple)"/>
+  <text x="598" y="196" text-anchor="middle" font-size="8" font-weight="700" fill="#6366f1" transform="rotate(-90,598,196)">sts:AssumeRole → deploy</text>
+
+  <!-- Git -->
+  <rect x="620" y="400" width="260" height="76" rx="10" fill="#f8fafc" stroke="#22c55e" stroke-width="2"/>
+  <rect x="620" y="400" width="260" height="26" rx="10" fill="#166534"/>
+  <text x="750" y="417" text-anchor="middle" font-size="11" font-weight="700" fill="#ffffff">GitHub — Source of Truth</text>
+  <text x="750" y="440" text-anchor="middle" font-size="9" fill="#16a34a">ArgoCD watches BU repos</text>
+  <text x="750" y="456" text-anchor="middle" font-size="9" fill="#16a34a">Git change → reconcile to target cluster</text>
+  <text x="750" y="470" text-anchor="middle" font-size="9" fill="#16a34a">No direct kubectl · Git is source of truth</text>
+
+  <!-- ArgoCD → Git (watches) -->
+  <path d="M580,140 C610,140 610,413 618,413" stroke="#22c55e" stroke-width="1.5" stroke-dasharray="5,3" fill="none" marker-end="url(#arr-green)"/>
+  <text x="595" y="310" font-size="8" fill="#22c55e" font-style="italic" transform="rotate(-90,595,310)">watches repos</text>
+</svg>
