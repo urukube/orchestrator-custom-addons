@@ -48,6 +48,7 @@ resource "helm_release" "istio_ingress" {
   chart      = "gateway"
   version    = var.istio_version
   namespace  = kubernetes_namespace_v1.istio_system[0].metadata[0].name
+  timeout    = 600
 
   values = [
     file("${path.module}/yamls/istio-ingress-values.yaml")

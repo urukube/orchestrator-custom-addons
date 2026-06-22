@@ -23,6 +23,7 @@ resource "helm_release" "prometheus" {
   version          = var.prometheus_version
   namespace        = local.monitoring_namespace
   create_namespace = false
+  timeout          = 600
 
   values = [
     templatefile("${path.module}/yamls/prometheus-values.yaml", {

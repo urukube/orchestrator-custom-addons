@@ -23,6 +23,7 @@ resource "helm_release" "argocd" {
   version          = var.argocd_version
   namespace        = local.argocd_namespace
   create_namespace = false
+  timeout          = 600
 
   values = [
     templatefile("${path.module}/yamls/argocd-values.yaml", {

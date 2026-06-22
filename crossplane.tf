@@ -45,6 +45,7 @@ resource "helm_release" "crossplane" {
   version          = var.crossplane_version
   namespace        = kubernetes_namespace_v1.crossplane[0].metadata[0].name
   create_namespace = false
+  timeout          = 600
 
   depends_on = [kubernetes_namespace_v1.crossplane]
 }
