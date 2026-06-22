@@ -7,7 +7,8 @@ resource "kubernetes_namespace_v1" "argocd" {
   count = var.enable_argocd ? 1 : 0
 
   metadata {
-    name = local.argocd_namespace
+    name   = local.argocd_namespace
+    labels = {}
   }
 }
 

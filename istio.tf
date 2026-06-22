@@ -8,7 +8,8 @@ resource "kubernetes_namespace_v1" "istio_system" {
   count = var.enable_istio ? 1 : 0
 
   metadata {
-    name = local.istio_system_namespace
+    name   = local.istio_system_namespace
+    labels = {}
   }
 }
 
