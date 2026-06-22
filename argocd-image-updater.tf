@@ -6,11 +6,12 @@
 resource "helm_release" "argocd_image_updater" {
   count = var.enable_argocd ? 1 : 0
 
-  name       = "argocd-image-updater"
-  repository = "https://argoproj.github.io/argo-helm"
-  chart      = "argocd-image-updater"
-  version    = "1.2.2"
-  namespace  = local.argocd_namespace
+  name            = "argocd-image-updater"
+  repository      = "https://argoproj.github.io/argo-helm"
+  chart           = "argocd-image-updater"
+  version         = "1.2.2"
+  namespace       = local.argocd_namespace
+  cleanup_on_fail = true
 
   values = [
     yamlencode({

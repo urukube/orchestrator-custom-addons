@@ -110,11 +110,12 @@ resource "kubernetes_namespace_v1" "eso" {
 resource "helm_release" "external_secrets" {
   count = var.enable_eso ? 1 : 0
 
-  name       = "external-secrets"
-  repository = "https://charts.external-secrets.io"
-  chart      = "external-secrets"
-  version    = var.eso_helm_version
-  namespace  = kubernetes_namespace_v1.eso[0].metadata[0].name
+  name            = "external-secrets"
+  repository      = "https://charts.external-secrets.io"
+  chart           = "external-secrets"
+  version         = var.eso_helm_version
+  namespace       = kubernetes_namespace_v1.eso[0].metadata[0].name
+  cleanup_on_fail = true
 
   values = [
     templatefile("${path.module}/yamls/external-secrets-values.yaml", {

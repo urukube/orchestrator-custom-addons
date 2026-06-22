@@ -15,11 +15,12 @@ resource "kubernetes_namespace_v1" "istio_system" {
 resource "helm_release" "istio_base" {
   count = var.enable_istio ? 1 : 0
 
-  name       = "istio-base"
-  repository = "https://istio-release.storage.googleapis.com/charts"
-  chart      = "base"
-  version    = var.istio_version
-  namespace  = kubernetes_namespace_v1.istio_system[0].metadata[0].name
+  name            = "istio-base"
+  repository      = "https://istio-release.storage.googleapis.com/charts"
+  chart           = "base"
+  version         = var.istio_version
+  namespace       = kubernetes_namespace_v1.istio_system[0].metadata[0].name
+  cleanup_on_fail = true
 
   depends_on = [kubernetes_namespace_v1.istio_system]
 }
@@ -27,11 +28,12 @@ resource "helm_release" "istio_base" {
 resource "helm_release" "istiod" {
   count = var.enable_istio ? 1 : 0
 
-  name       = "istiod"
-  repository = "https://istio-release.storage.googleapis.com/charts"
-  chart      = "istiod"
-  version    = var.istio_version
-  namespace  = kubernetes_namespace_v1.istio_system[0].metadata[0].name
+  name            = "istiod"
+  repository      = "https://istio-release.storage.googleapis.com/charts"
+  chart           = "istiod"
+  version         = var.istio_version
+  namespace       = kubernetes_namespace_v1.istio_system[0].metadata[0].name
+  cleanup_on_fail = true
 
   values = [
     file("${path.module}/yamls/istio-values.yaml")
@@ -48,7 +50,8 @@ resource "helm_release" "istio_ingress" {
   chart      = "gateway"
   version    = var.istio_version
   namespace  = kubernetes_namespace_v1.istio_system[0].metadata[0].name
-  timeout    = 600
+  timeout         = 600
+  cleanup_on_fail = true
 
   values = [
     file("${path.module}/yamls/istio-ingress-values.yaml")
