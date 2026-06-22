@@ -90,7 +90,8 @@ securityContext:
 # Labels & Annotations [DEFAULT]
 # Purpose: Add metadata to the gateway pods/service.
 # -----------------------------------------------------------------------------
-labels: {} # [DEFAULT]
+labels:
+  sidecar.istio.io/inject: "false" # [CUSTOM] Gateway runs Envoy natively; injection would create a circular dependency
 annotations: {} # [DEFAULT]
 
 # -----------------------------------------------------------------------------
