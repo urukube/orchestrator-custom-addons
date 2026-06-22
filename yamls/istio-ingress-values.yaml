@@ -17,9 +17,9 @@
 name: istio-ingressgateway # [DEFAULT]
 replicaCount: 1 # [DEFAULT]
 
-# ECR Public — no rate limits for EKS nodes (docker.io hits pull quota)
+# Official Istio GCR release registry — no Docker Hub rate limits
 global:
-  hub: public.ecr.aws/istio
+  hub: gcr.io/istio-release
 
 # -----------------------------------------------------------------------------
 # Service Configuration [CUSTOM]

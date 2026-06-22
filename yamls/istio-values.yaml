@@ -20,7 +20,7 @@ global:
   istioNamespace: istio-system  # [DEFAULT]
 
   # Default hub for Istio images.
-  hub: public.ecr.aws/istio  # [CUSTOM] ECR Public — no rate limits for EKS nodes
+  hub: gcr.io/istio-release  # [CUSTOM] Official Istio GCR release registry — no Docker Hub rate limits
 
   # Default tag for Istio images.
   # tag: ""  # [DEFAULT] - Defaults to chart version
