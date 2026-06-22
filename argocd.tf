@@ -11,6 +11,30 @@ resource "kubernetes_namespace_v1" "argocd" {
   }
 }
 
+resource "random_password" "argocd_redis" {
+  count   = var.enable_argocd ? 1 : 0
+  length  = 32
+  special = false
+}
+
+# Pre-create the redis secret so the Helm pre-install hook job is always a no-op.
+# The hook job checks whether the secret exists before creating it — if it exists,
+# it exits 0 immediately. This prevents a stuck job from leaving ArgoCD undeployable.
+resource "kubernetes_secret_v1" "argocd_redis" {
+  count = var.enable_argocd ? 1 : 0
+
+  metadata {
+    name      = "argocd-redis"
+    namespace = kubernetes_namespace_v1.argocd[0].metadata[0].name
+  }
+
+  data = {
+    auth = random_password.argocd_redis[0].result
+  }
+
+  depends_on = [kubernetes_namespace_v1.argocd]
+}
+
 resource "helm_release" "argocd" {
   count = var.enable_argocd ? 1 : 0
 
@@ -34,6 +58,7 @@ resource "helm_release" "argocd" {
 
   depends_on = [
     helm_release.istiod,
-    kubernetes_namespace_v1.argocd
+    kubernetes_namespace_v1.argocd,
+    kubernetes_secret_v1.argocd_redis,
   ]
 }

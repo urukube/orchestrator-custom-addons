@@ -33,6 +33,8 @@ mock_provider "kubectl" {}
 
 mock_provider "time" {}
 
+mock_provider "random" {}
+
 run "setup" {
   module {
     source = "./tests/setup"
@@ -82,6 +84,11 @@ run "plan" {
   assert {
     condition     = length(helm_release.argocd) == 1
     error_message = "ArgoCD Helm release should be created"
+  }
+
+  assert {
+    condition     = length(kubernetes_secret_v1.argocd_redis) == 1
+    error_message = "ArgoCD redis secret should be pre-created by Terraform"
   }
 
   # Verify Prometheus resource is created
