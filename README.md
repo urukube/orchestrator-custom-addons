@@ -148,6 +148,7 @@ This role is created once per BU account (dev and prod separately) and never cha
 | <a name="requirement_helm"></a> [helm](#requirement\_helm) | ~> 3.0 |
 | <a name="requirement_kubectl"></a> [kubectl](#requirement\_kubectl) | >= 1.14.0 |
 | <a name="requirement_kubernetes"></a> [kubernetes](#requirement\_kubernetes) | >= 2.35.0 |
+| <a name="requirement_random"></a> [random](#requirement\_random) | ~> 3.6 |
 | <a name="requirement_time"></a> [time](#requirement\_time) | >= 0.9.0 |
 
 ## Providers
@@ -158,6 +159,7 @@ This role is created once per BU account (dev and prod separately) and never cha
 | <a name="provider_helm"></a> [helm](#provider\_helm) | ~> 3.0 |
 | <a name="provider_kubectl"></a> [kubectl](#provider\_kubectl) | >= 1.14.0 |
 | <a name="provider_kubernetes"></a> [kubernetes](#provider\_kubernetes) | >= 2.35.0 |
+| <a name="provider_random"></a> [random](#provider\_random) | ~> 3.6 |
 | <a name="provider_time"></a> [time](#provider\_time) | >= 0.9.0 |
 
 ## Modules
@@ -206,7 +208,9 @@ No modules.
 | [kubernetes_namespace_v1.monitoring](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/namespace_v1) | resource |
 | [kubernetes_role_binding_v1.argocd_secret_patcher](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/role_binding_v1) | resource |
 | [kubernetes_role_v1.argocd_secret_patcher](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/role_v1) | resource |
+| [kubernetes_secret_v1.argocd_redis](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/secret_v1) | resource |
 | [kubernetes_service_account_v1.argocd_ecr_updater](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/service_account_v1) | resource |
+| [random_password.argocd_redis](https://registry.terraform.io/providers/hashicorp/random/latest/docs/resources/password) | resource |
 | [time_sleep.wait_for_crossplane_crds](https://registry.terraform.io/providers/hashicorp/time/latest/docs/resources/sleep) | resource |
 | [time_sleep.wait_for_provider_crds](https://registry.terraform.io/providers/hashicorp/time/latest/docs/resources/sleep) | resource |
 | [aws_caller_identity.current](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/data-sources/caller_identity) | data source |
