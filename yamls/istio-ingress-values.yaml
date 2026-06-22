@@ -17,6 +17,10 @@
 name: istio-ingressgateway # [DEFAULT]
 replicaCount: 1 # [DEFAULT]
 
+# ECR Public — no rate limits for EKS nodes (docker.io hits pull quota)
+global:
+  hub: public.ecr.aws/istio
+
 # -----------------------------------------------------------------------------
 # Service Configuration [CUSTOM]
 # Purpose: Expose the gateway specifically via a LoadBalancer.
