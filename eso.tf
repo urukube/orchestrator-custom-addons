@@ -133,7 +133,17 @@ resource "helm_release" "external_secrets" {
 }
 
 ################################################################################
-# 4. ClusterSecretStore — AWS Secrets Manager via ESO service account IRSA
+# 4. Wait for ESO CRDs to register before creating CRD-backed resources
+################################################################################
+
+resource "time_sleep" "eso_crds" {
+  count           = var.enable_eso ? 1 : 0
+  create_duration = "30s"
+  depends_on      = [helm_release.external_secrets]
+}
+
+################################################################################
+# 5. ClusterSecretStore — AWS Secrets Manager via ESO service account IRSA
 ################################################################################
 
 resource "kubectl_manifest" "eso_cluster_secret_store" {
@@ -163,5 +173,5 @@ resource "kubectl_manifest" "eso_cluster_secret_store" {
     }
   })
 
-  depends_on = [helm_release.external_secrets]
+  depends_on = [time_sleep.eso_crds]
 }
