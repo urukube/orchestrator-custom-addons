@@ -147,7 +147,9 @@ resource "time_sleep" "eso_crds" {
 ################################################################################
 
 resource "kubectl_manifest" "eso_cluster_secret_store" {
-  count = var.enable_eso ? 1 : 0
+  count              = var.enable_eso ? 1 : 0
+  server_side_apply  = true
+  wait               = true
 
   yaml_body = yamlencode({
     apiVersion = "external-secrets.io/v1beta1"

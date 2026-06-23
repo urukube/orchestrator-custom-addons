@@ -10,7 +10,9 @@
 ################################################################################
 
 resource "kubectl_manifest" "eso_argocd_github_token" {
-  count = var.enable_eso && var.enable_argocd ? 1 : 0
+  count             = var.enable_eso && var.enable_argocd ? 1 : 0
+  server_side_apply = true
+  wait              = true
 
   yaml_body = yamlencode({
     apiVersion = "external-secrets.io/v1beta1"
@@ -45,7 +47,9 @@ resource "kubectl_manifest" "eso_argocd_github_token" {
 }
 
 resource "kubectl_manifest" "eso_argocd_admin_password" {
-  count = var.enable_eso && var.enable_argocd ? 1 : 0
+  count             = var.enable_eso && var.enable_argocd ? 1 : 0
+  server_side_apply = true
+  wait              = true
 
   yaml_body = yamlencode({
     apiVersion = "external-secrets.io/v1beta1"
