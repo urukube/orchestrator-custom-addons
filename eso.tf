@@ -131,3 +131,37 @@ resource "helm_release" "external_secrets" {
     helm_release.argocd,
   ]
 }
+
+################################################################################
+# 4. ClusterSecretStore — AWS Secrets Manager via ESO service account IRSA
+################################################################################
+
+resource "kubectl_manifest" "eso_cluster_secret_store" {
+  count = var.enable_eso ? 1 : 0
+
+  yaml_body = yamlencode({
+    apiVersion = "external-secrets.io/v1beta1"
+    kind       = "ClusterSecretStore"
+    metadata = {
+      name = "aws-secrets-manager"
+    }
+    spec = {
+      provider = {
+        aws = {
+          service = "SecretsManager"
+          region  = data.aws_region.current.region
+          auth = {
+            jwt = {
+              serviceAccountRef = {
+                name      = local.eso_serviceaccount_name
+                namespace = local.eso_namespace
+              }
+            }
+          }
+        }
+      }
+    }
+  })
+
+  depends_on = [helm_release.external_secrets]
+}
