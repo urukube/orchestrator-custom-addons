@@ -126,6 +126,8 @@ resource "helm_release" "external_secrets" {
   ]
 
   depends_on = [
-    kubernetes_namespace_v1.eso
+    kubernetes_namespace_v1.eso,
+    helm_release.istiod,
+    helm_release.argocd,
   ]
 }

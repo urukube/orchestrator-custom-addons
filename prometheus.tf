@@ -34,6 +34,7 @@ resource "helm_release" "prometheus" {
 
   depends_on = [
     helm_release.istiod,
-    kubernetes_namespace_v1.monitoring
+    helm_release.argocd,
+    kubernetes_namespace_v1.monitoring,
   ]
 }

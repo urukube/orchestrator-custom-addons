@@ -18,5 +18,5 @@ resource "helm_release" "kiali" {
     file("${path.module}/yamls/kiali-values.yaml")
   ]
 
-  depends_on = [helm_release.istiod] # Kiali needs Istio to be useful
+  depends_on = [helm_release.istiod, helm_release.argocd]
 }

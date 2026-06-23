@@ -79,7 +79,8 @@ resource "kubernetes_service_account_v1" "argocd_ecr_updater" {
   }
 
   depends_on = [
-    kubernetes_namespace_v1.argocd
+    kubernetes_namespace_v1.argocd,
+    helm_release.argocd,
   ]
 }
 
@@ -98,6 +99,8 @@ resource "kubernetes_role_v1" "argocd_secret_patcher" {
     verbs          = ["get", "patch"]
     resource_names = [local.ecr_secret_name]
   }
+
+  depends_on = [helm_release.argocd]
 }
 
 resource "kubernetes_role_binding_v1" "argocd_secret_patcher" {
@@ -119,6 +122,8 @@ resource "kubernetes_role_binding_v1" "argocd_secret_patcher" {
     name      = kubernetes_service_account_v1.argocd_ecr_updater[0].metadata[0].name
     namespace = local.argocd_namespace
   }
+
+  depends_on = [helm_release.argocd]
 }
 
 # 5. CronJob
@@ -175,4 +180,6 @@ resource "kubernetes_cron_job_v1" "argocd_ecr_updater" {
       }
     }
   }
+
+  depends_on = [helm_release.argocd]
 }

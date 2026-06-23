@@ -48,7 +48,11 @@ resource "helm_release" "crossplane" {
   timeout          = 600
   cleanup_on_fail  = true
 
-  depends_on = [kubernetes_namespace_v1.crossplane]
+  depends_on = [
+    kubernetes_namespace_v1.crossplane,
+    helm_release.istiod,
+    helm_release.argocd,
+  ]
 }
 
 ################################################################################
