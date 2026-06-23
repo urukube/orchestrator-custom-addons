@@ -95,7 +95,7 @@ securityContext:
 # Purpose: Add metadata to the gateway pods/service.
 # -----------------------------------------------------------------------------
 labels:
-  sidecar.istio.io/inject: "false" # [CUSTOM] Gateway runs Envoy natively; injection would create a circular dependency
+  sidecar.istio.io/inject: "true" # [CUSTOM] Required for istiod webhook to resolve image: auto via gateway template (inject.istio.io/templates: gateway)
 annotations: {} # [DEFAULT]
 
 # -----------------------------------------------------------------------------
