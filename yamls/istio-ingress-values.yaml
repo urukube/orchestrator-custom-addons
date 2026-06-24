@@ -30,6 +30,8 @@ service:
   type: LoadBalancer # [CUSTOM] Expose externally
   annotations:
     service.beta.kubernetes.io/aws-load-balancer-scheme: internet-facing
+    service.beta.kubernetes.io/aws-load-balancer-manage-backend-security-group-rules: "true"
+    service.beta.kubernetes.io/aws-load-balancer-attributes: load_balancing.cross_zone.enabled=true
 
   # External Traffic Policy
   # Cluster: Good for failover, keeps source IP if supported by CNI/Cloud
