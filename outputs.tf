@@ -60,6 +60,20 @@ output "kiali_namespace" {
 }
 
 ################################################################################
+# Komoplane Outputs
+################################################################################
+
+output "komoplane_release_name" {
+  description = "Name of the Komoplane Helm release"
+  value       = try(helm_release.komoplane[0].name, null)
+}
+
+output "komoplane_namespace" {
+  description = "Namespace where Komoplane is installed"
+  value       = try(helm_release.komoplane[0].namespace, null)
+}
+
+################################################################################
 # ArgoCD Orchestrator Role Outputs
 ################################################################################
 

@@ -76,6 +76,45 @@ resource "kubectl_manifest" "kiali_vs" {
   depends_on = [helm_release.kiali, kubectl_manifest.istio_gateway]
 }
 
+# Komoplane VirtualService
+resource "kubectl_manifest" "komoplane_vs" {
+  count = var.enable_komoplane && var.enable_istio ? 1 : 0
+  yaml_body = yamlencode({
+    apiVersion = "networking.istio.io/v1beta1"
+    kind       = "VirtualService"
+    metadata = {
+      name      = "komoplane-vs"
+      namespace = local.crossplane_namespace
+    }
+    spec = {
+      hosts    = [var.domain_url]
+      gateways = ["${local.istio_system_namespace}/istio-gateway"]
+      http = [
+        {
+          match = [
+            {
+              uri = {
+                prefix = "/komoplane"
+              }
+            }
+          ]
+          route = [
+            {
+              destination = {
+                host = "komoplane"
+                port = {
+                  number = 8090
+                }
+              }
+            }
+          ]
+        }
+      ]
+    }
+  })
+  depends_on = [helm_release.komoplane, kubectl_manifest.istio_gateway]
+}
+
 # Prometheus VirtualService
 resource "kubectl_manifest" "prometheus_vs" {
   count = var.enable_prometheus && var.enable_istio ? 1 : 0

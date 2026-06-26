@@ -1,0 +1,12 @@
+# =============================================================================
+# Komoplane Helm Chart Values
+# Chart: https://github.com/komodorio/komoplane/tree/main/charts/komoplane
+# =============================================================================
+
+# Serve the UI under /komoplane so the Istio VirtualService prefix routes work.
+env:
+  BASE_PATH: /komoplane
+
+service:
+  type: ClusterIP
+  port: 8090

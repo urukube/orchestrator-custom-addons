@@ -125,6 +125,18 @@ variable "enable_eso" {
   default     = false
 }
 
+variable "enable_komoplane" {
+  description = "Enable Komoplane UI for browsing Crossplane composite resources"
+  type        = bool
+  default     = false
+}
+
+variable "komoplane_version" {
+  description = "Version of the Komoplane Helm chart"
+  type        = string
+  default     = "0.3.3"
+}
+
 variable "enable_prometheus" {
   description = "Enable Prometheus addon"
   type        = bool
