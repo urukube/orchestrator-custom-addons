@@ -61,6 +61,7 @@ run "plan" {
     enable_eso        = true
     enable_ecr        = true
     enable_crossplane = true
+    enable_komoplane  = true
 
     tags = {
       bu_id  = run.setup.bu_id
@@ -169,5 +170,16 @@ run "plan" {
   assert {
     condition     = length(kubectl_manifest.crossplane_provider_config) == 1
     error_message = "Crossplane ProviderConfig should be created"
+  }
+
+  # Verify Komoplane resources are created
+  assert {
+    condition     = length(helm_release.komoplane) == 1
+    error_message = "Komoplane Helm release should be created"
+  }
+
+  assert {
+    condition     = length(kubectl_manifest.komoplane_vs) == 1
+    error_message = "Komoplane VirtualService should be created"
   }
 }
