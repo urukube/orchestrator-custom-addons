@@ -15,6 +15,8 @@ All addons are independently controlled via `enable_*` / `enable_argocd` variabl
 | Prometheus | `enable_prometheus` | `false` | `29.13.0` |
 | ArgoCD | `enable_argocd` | `false` | `9.6.0` |
 | ArgoCD Image Updater | `enable_argocd` | `false` | `1.2.2` |
+| Crossplane | `enable_crossplane` | `false` | `1.19.0` |
+| Komoplane | `enable_komoplane` | `false` | `0.3.3` |
 | External Secrets Operator | always on | — | `2.6.0` |
 
 ### Dependency Graph
@@ -138,6 +140,39 @@ Before Crossplane can provision into a BU account, the BU (or platform team on t
 
 This role is created once per BU account (dev and prod separately) and never changes.
 
+## Komoplane — Crossplane Resource UI
+
+When `enable_komoplane = true`, Komoplane is installed into the `crossplane-system` namespace alongside Crossplane. It provides a read-only web UI for browsing the state of Crossplane composite resources, claims, managed resources, and providers — the equivalent of Kiali for Istio, but for your infrastructure graph.
+
+> **Requires `enable_crossplane = true`** — Komoplane reads Crossplane CRDs from the cluster at startup. If Crossplane is not installed, Komoplane will start but show nothing.
+
+### What it shows
+
+- All **Composite Resources (XRs)** and their constituent **Managed Resources** — VPCs, subnets, EKS clusters, IAM roles — with live health and sync status.
+- **Claims (XRCs)** submitted by BU engineers, linked back to the XR they resolved to.
+- **Provider** health and installed package versions.
+- Dependency graph: which Managed Resource belongs to which Composition, and which Claim owns it.
+
+### Access
+
+With Istio enabled, Komoplane is reachable at:
+
+```
+https://<domain_url>/komoplane
+```
+
+The `BASE_PATH=/komoplane` environment variable (set in `yamls/komoplane-values.yaml`) tells Komoplane to serve all its assets and API routes under that prefix, so no Istio URI rewrite is needed.
+
+### Authentication
+
+Komoplane is unauthenticated by default (read-only, no write access to the cluster). Restrict access at the Istio gateway layer if needed (e.g., an `AuthorizationPolicy` or external auth).
+
+### `komoplane.tf`
+
+Installs the `komodorio/komoplane` Helm chart from `https://helm.komodor.io` into `crossplane-system`. It depends on `time_sleep.wait_for_crossplane_crds` to ensure the Crossplane CRDs are registered before Komoplane starts — otherwise Komoplane's startup CRD discovery fails. No IRSA role is needed; Komoplane only calls the Kubernetes API (read-only verbs), and the required `ClusterRole` is bundled in the chart.
+
+---
+
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 
@@ -187,6 +222,7 @@ No modules.
 | [helm_release.argocd_image_updater](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.crossplane](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.external_secrets](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
+| [helm_release.komoplane](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.istio_base](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.istio_ingress](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
 | [helm_release.istiod](https://registry.terraform.io/providers/hashicorp/helm/latest/docs/resources/release) | resource |
@@ -198,6 +234,7 @@ No modules.
 | [kubectl_manifest.crossplane_runtime_config](https://registry.terraform.io/providers/gavinbunney/kubectl/latest/docs/resources/manifest) | resource |
 | [kubectl_manifest.istio_gateway](https://registry.terraform.io/providers/gavinbunney/kubectl/latest/docs/resources/manifest) | resource |
 | [kubectl_manifest.kiali_vs](https://registry.terraform.io/providers/gavinbunney/kubectl/latest/docs/resources/manifest) | resource |
+| [kubectl_manifest.komoplane_vs](https://registry.terraform.io/providers/gavinbunney/kubectl/latest/docs/resources/manifest) | resource |
 | [kubectl_manifest.prometheus_vs](https://registry.terraform.io/providers/gavinbunney/kubectl/latest/docs/resources/manifest) | resource |
 | [kubernetes_cron_job_v1.argocd_ecr_updater](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/cron_job_v1) | resource |
 | [kubernetes_ingress_class_v1.istio](https://registry.terraform.io/providers/hashicorp/kubernetes/latest/docs/resources/ingress_class_v1) | resource |
@@ -238,11 +275,13 @@ No modules.
 | <a name="input_enable_eso"></a> [enable\_eso](#input\_enable\_eso) | Enable External Secrets Operator addon | `bool` | `false` | no |
 | <a name="input_enable_istio"></a> [enable\_istio](#input\_enable\_istio) | Enable Istio addon | `bool` | `false` | no |
 | <a name="input_enable_kiali"></a> [enable\_kiali](#input\_enable\_kiali) | Enable Kiali addon | `bool` | `false` | no |
+| <a name="input_enable_komoplane"></a> [enable\_komoplane](#input\_enable\_komoplane) | Enable Komoplane UI for browsing Crossplane composite resources | `bool` | `false` | no |
 | <a name="input_enable_prometheus"></a> [enable\_prometheus](#input\_enable\_prometheus) | Enable Prometheus addon | `bool` | `false` | no |
 | <a name="input_env"></a> [env](#input\_env) | Environment name (dev, staging, prod) | `string` | n/a | yes |
 | <a name="input_eso_helm_version"></a> [eso\_helm\_version](#input\_eso\_helm\_version) | Version of the External Secrets Operator Helm chart | `string` | `"2.6.0"` | no |
 | <a name="input_istio_version"></a> [istio\_version](#input\_istio\_version) | Version of the Istio Helm chart | `string` | `"1.30.1"` | no |
 | <a name="input_kiali_version"></a> [kiali\_version](#input\_kiali\_version) | Version of the Kiali Helm chart | `string` | `"2.26.0"` | no |
+| <a name="input_komoplane_version"></a> [komoplane\_version](#input\_komoplane\_version) | Version of the Komoplane Helm chart | `string` | `"0.3.3"` | no |
 | <a name="input_prometheus_version"></a> [prometheus\_version](#input\_prometheus\_version) | Version of the Prometheus Helm chart | `string` | `"29.13.0"` | no |
 | <a name="input_tags"></a> [tags](#input\_tags) | Tags to apply to all resources | `map(string)` | `{}` | no |
 
@@ -259,6 +298,8 @@ No modules.
 | <a name="output_istiod_release_name"></a> [istiod\_release\_name](#output\_istiod\_release\_name) | Name of the Istiod Helm release |
 | <a name="output_kiali_namespace"></a> [kiali\_namespace](#output\_kiali\_namespace) | Namespace where Kiali is installed |
 | <a name="output_kiali_release_name"></a> [kiali\_release\_name](#output\_kiali\_release\_name) | Name of the Kiali Helm release |
+| <a name="output_komoplane_namespace"></a> [komoplane\_namespace](#output\_komoplane\_namespace) | Namespace where Komoplane is installed |
+| <a name="output_komoplane_release_name"></a> [komoplane\_release\_name](#output\_komoplane\_release\_name) | Name of the Komoplane Helm release |
 | <a name="output_prometheus_namespace"></a> [prometheus\_namespace](#output\_prometheus\_namespace) | Namespace where Prometheus is installed |
 | <a name="output_prometheus_release_name"></a> [prometheus\_release\_name](#output\_prometheus\_release\_name) | Name of the Prometheus Helm release |
 <!-- END_TF_DOCS -->
