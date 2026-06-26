@@ -134,7 +134,7 @@ variable "enable_komoplane" {
 variable "komoplane_version" {
   description = "Version of the Komoplane Helm chart"
   type        = string
-  default     = "0.3.3"
+  default     = "0.1.8"
 }
 
 variable "enable_prometheus" {

@@ -16,7 +16,7 @@ All addons are independently controlled via `enable_*` / `enable_argocd` variabl
 | ArgoCD | `enable_argocd` | `false` | `9.6.0` |
 | ArgoCD Image Updater | `enable_argocd` | `false` | `1.2.2` |
 | Crossplane | `enable_crossplane` | `false` | `1.19.0` |
-| Komoplane | `enable_komoplane` | `false` | `0.3.3` |
+| Komoplane | `enable_komoplane` | `false` | `0.1.8` |
 | External Secrets Operator | always on | — | `2.6.0` |
 
 ### Dependency Graph
