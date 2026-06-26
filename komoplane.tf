@@ -10,7 +10,7 @@ resource "helm_release" "komoplane" {
   count = var.enable_komoplane ? 1 : 0
 
   name             = "komoplane"
-  repository       = "https://helm.komodor.io"
+  repository       = "https://helm-charts.komodor.io"
   chart            = "komoplane"
   version          = var.komoplane_version
   namespace        = local.crossplane_namespace
