@@ -18,7 +18,7 @@ resource "kubectl_manifest" "istio_gateway" {
             name     = "http"
             protocol = "HTTP"
           }
-          hosts = [var.domain_url]
+          hosts = [var.domain_url, "komoplane.${var.domain_url}"]
         },
         {
           port = {
@@ -29,7 +29,7 @@ resource "kubectl_manifest" "istio_gateway" {
           tls = {
             mode = "PASSTHROUGH"
           }
-          hosts = [var.domain_url]
+          hosts = [var.domain_url, "komoplane.${var.domain_url}"]
         }
       ]
     }

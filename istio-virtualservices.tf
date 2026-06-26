@@ -77,8 +77,8 @@ resource "kubectl_manifest" "kiali_vs" {
 }
 
 # Komoplane VirtualService
-# Komoplane serves its UI at / with no configurable base path, so the /komoplane
-# prefix is stripped via a URI rewrite before forwarding to the pod.
+# Komoplane serves at / with no configurable base path, so it gets its own
+# subdomain (komoplane.<domain>) rather than a shared subpath.
 resource "kubectl_manifest" "komoplane_vs" {
   count = var.enable_komoplane && var.enable_istio ? 1 : 0
   yaml_body = yamlencode({
@@ -89,20 +89,10 @@ resource "kubectl_manifest" "komoplane_vs" {
       namespace = local.crossplane_namespace
     }
     spec = {
-      hosts    = [var.domain_url]
+      hosts    = ["komoplane.${var.domain_url}"]
       gateways = ["${local.istio_system_namespace}/istio-gateway"]
       http = [
         {
-          match = [
-            {
-              uri = {
-                prefix = "/komoplane"
-              }
-            }
-          ]
-          rewrite = {
-            uri = "/"
-          }
           route = [
             {
               destination = {
