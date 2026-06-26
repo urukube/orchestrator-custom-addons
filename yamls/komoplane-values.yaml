@@ -2,10 +2,8 @@
 # Komoplane Helm Chart Values
 # Chart: https://github.com/komodorio/komoplane/tree/main/charts/komoplane
 # =============================================================================
-
-# Serve the UI under /komoplane so the Istio VirtualService prefix routes work.
-env:
-  BASE_PATH: /komoplane
+# Komoplane serves its UI at / with no configurable base path.
+# Path prefix stripping is handled by the Istio VirtualService rewrite.
 
 service:
   type: ClusterIP

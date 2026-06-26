@@ -77,6 +77,8 @@ resource "kubectl_manifest" "kiali_vs" {
 }
 
 # Komoplane VirtualService
+# Komoplane serves its UI at / with no configurable base path, so the /komoplane
+# prefix is stripped via a URI rewrite before forwarding to the pod.
 resource "kubectl_manifest" "komoplane_vs" {
   count = var.enable_komoplane && var.enable_istio ? 1 : 0
   yaml_body = yamlencode({
@@ -98,6 +100,9 @@ resource "kubectl_manifest" "komoplane_vs" {
               }
             }
           ]
+          rewrite = {
+            uri = "/"
+          }
           route = [
             {
               destination = {
